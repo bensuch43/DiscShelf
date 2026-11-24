@@ -3,16 +3,19 @@ import * as db from '../db.js';
 import { parsePounds, formatPence, penceToInput } from '../money.js';
 import { validateBarcode, normaliseBarcode } from '../ean.js';
 import { valueDetail } from '../value.js';
-import { formatDate } from '../ui.js';
-import { clone, view, setActiveTab, fillSelect, toast, nowIso, newId, poster, plural } from '../ui.js';
+import { collectionsContaining, setMembership, enrichEntries } from '../collections.js';
+import {
+  clone, view, setActiveTab, fillSelect, toast, nowIso, newId, poster, plural, el, takePrefill, formatDate,
+} from '../ui.js';
 import { wireLookup } from './lookup-panel.js';
 
 const TEXT_FIELDS = ['title', 'year', 'discCount', 'ean', 'format', 'packaging', 'region', 'condition',
   'distributor', 'edition', 'purchasedFrom', 'purchasedOn', 'notes'];
 
 export async function renderItemForm({ id }, ctx) {
-  const [all, logs] = await Promise.all([db.getAll('items'), db.getAll('priceLog')]);
+  const [all, logs, collections] = await Promise.all([db.getAll('items'), db.getAll('priceLog'), db.getAll('collections')]);
   const existing = id ? await db.get('items', id) : null;
+  const prefill = id ? null : takePrefill();
   if (!ctx.isCurrent()) return;
   if (id && !existing) { toast('That item no longer exists.'); location.hash = '#/collection'; return; }
   setActiveTab(id ? 'collection' : 'add');
@@ -29,7 +32,8 @@ export async function renderItemForm({ id }, ctx) {
   root.querySelector('#distributors').replaceChildren(...distributors.map((d) => new Option(d)));
 
   // Fields not shown as inputs (filled by TMDB lookups).
-  const extra = { tmdbId: existing?.tmdbId ?? null, posterPath: existing?.posterPath ?? null, mediaType: existing?.mediaType ?? null };
+  const seed = existing || prefill?.record || {};
+  const extra = { tmdbId: seed.tmdbId ?? null, posterPath: seed.posterPath ?? null, mediaType: seed.mediaType ?? null };
   const posterSlot = form.querySelector('[data-slot="poster"]');
   const showPoster = (path) => { posterSlot.replaceChildren(path ? poster(path, CONFIG.tmdb.posterSize) : ''); posterSlot.hidden = !path; };
   showPoster(extra.posterPath);
@@ -56,6 +60,10 @@ export async function renderItemForm({ id }, ctx) {
       paid: `Valued at ${formatPence(detail.value)}, what you paid. Log prices on a want with this barcode, or enter an estimate, to change it.`,
     }[detail.source] || 'No value yet: add a price paid or an estimate.';
   } else {
+    if (prefill?.record) {
+      f.title.value = prefill.record.title || '';
+      if (prefill.record.year) f.year.value = String(prefill.record.year);
+    }
     // New items: region follows format until the user picks one themselves.
     let regionTouched = false;
     const applyDefaultRegion = () => {
@@ -79,6 +87,34 @@ export async function renderItemForm({ id }, ctx) {
   };
   f.ean.addEventListener('input', checkEan);
   if (existing) checkEan();
+
+  // Collections: tick boxes. A box shows whether this title already counts
+  // towards the collection, and follows the title/year as you type until you
+  // touch it. Saving only changes collections whose box you touched, so an
+  // untouched box can never remove a film from a checklist.
+  const collField = form.querySelector('[data-field="collections"]');
+  const sortedColls = [...collections].sort((a, b) => a.name.localeCompare(b.name, CONFIG.locale, { sensitivity: 'base' }));
+  form.querySelector('[data-note="no-collections"]').hidden = collections.length > 0;
+  const touched = new Set();
+  const currentRecord = () => ({
+    ...extra, title: f.title.value.trim(), year: /^\d{4}$/.test(f.year.value.trim()) ? +f.year.value.trim() : null,
+  });
+  const boxes = sortedColls.map((c) => {
+    const box = el('input', { type: 'checkbox', name: 'collectionIds', value: c.id });
+    box.addEventListener('change', () => touched.add(c.id));
+    collField.append(el('label', { className: 'inline' }, box, ` ${c.name}`));
+    return { c, box };
+  });
+  const syncBoxes = () => {
+    const rec = currentRecord();
+    const member = new Set(rec.title ? collectionsContaining(rec, collections).map((c) => c.id) : []);
+    for (const { c, box } of boxes) if (!touched.has(c.id)) box.checked = member.has(c.id);
+  };
+  f.title.addEventListener('input', syncBoxes);
+  f.year.addEventListener('input', syncBoxes);
+  // Seed fields first so the initial state reflects existing/prefilled values.
+  queueMicrotask(syncBoxes);
+  if (prefill?.returnTo) form.querySelector('[data-action="cancel"]').href = prefill.returnTo;
 
   wireLookup(form, extra, { onPosterChange: showPoster });
 
@@ -128,8 +164,14 @@ export async function renderItemForm({ id }, ctx) {
       updatedAt: now,
     };
     await db.put('items', item);
+    // Apply collection ticks, and give matching pasted titles this disc's TMDB details.
+    for (const { c, box } of boxes) {
+      let next = touched.has(c.id) ? setMembership(c, item, box.checked, now) : c;
+      next = enrichEntries(next, [item], now);
+      if (next !== c) await db.put('collections', next);
+    }
     toast(existing ? 'Saved.' : `Added "${title}".`);
-    location.hash = '#/collection';
+    location.hash = prefill?.returnTo || '#/collection';
   });
 
   if (!existing) f.title.focus();

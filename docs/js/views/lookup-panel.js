@@ -1,35 +1,38 @@
-// Shared "fill from scan / barcode / title search" behaviour for the item and want forms.
-// The form must contain: [data-action="scan"], [data-action="lookup-ean"],
-// [data-action="search-title"], [data-panel="lookup"], and inputs title, year, ean,
-// format, packaging (format change triggers the region default in item forms).
+// Shared "fill from scan / title search" behaviour for the item and want forms.
+// The form must contain: [data-action="scan"], [data-action="search-title"],
+// [data-panel="lookup"], and inputs title, year, ean.
+// Barcode lookup services were removed in 0.5.0 (none allow browser requests),
+// so a scan fills the barcode, shows what this device already knows about it,
+// and hands over to TMDB title search.
 import { openScanner } from '../scanner.js';
-import { upcLookup, tmdbSearch, cleanTitle, guessEdition, upcUsageToday } from '../lookup.js';
+import { tmdbSearch, cleanTitle } from '../lookup.js';
 import { validateBarcode } from '../ean.js';
-import { CONFIG } from '../config.js';
+import * as db from '../db.js';
 import { el, poster, titleYear } from '../ui.js';
+
+/** Records on this device with this barcode. */
+async function localMatches(ean) {
+  const [items, wants] = await Promise.all([db.getAll('items'), db.getAll('wants')]);
+  return { items: items.filter((i) => i.ean === ean), wants: wants.filter((w) => w.ean === ean && w.status !== 'bought') };
+}
 
 /**
  * extra: object that receives tmdbId / posterPath / mediaType for the record being edited.
  * onPosterChange: called after a TMDB pick so the form can show the poster.
  */
-export function wireLookup(form, extra, { onPosterChange, onBarcode } = {}) {
+export function wireLookup(form, extra, { onPosterChange } = {}) {
   const f = form.elements;
   const panel = form.querySelector('[data-panel="lookup"]');
-
-  const say = (...nodes) => { panel.hidden = false; panel.replaceChildren(...nodes); };
-  const busy = (text) => say(el('p', { className: 'hint', textContent: text }));
-
-  const setSelect = (select, value) => {
-    if (!value || ![...select.options].some((o) => o.value === value)) return false;
-    select.value = value;
-    select.dispatchEvent(new Event('change'));
-    return true;
-  };
+  const say = (...nodes) => { panel.hidden = false; panel.replaceChildren(...nodes.filter(Boolean)); };
 
   async function searchTmdb(query, preface = []) {
-    const q = cleanTitle(query) || query;
-    if (!q) { say(...preface, el('p', { className: 'error', textContent: 'Type a title first.' })); return; }
-    busy(`Searching TMDB for "${q}"…`);
+    const q = cleanTitle(query) || query.trim();
+    if (!q) {
+      say(...preface, el('p', { className: 'hint', textContent: 'Type the title above, then tap Search title.' }));
+      f.title.focus();
+      return;
+    }
+    say(...preface, el('p', { className: 'hint', textContent: `Searching TMDB for "${q}"…` }));
     const r = await tmdbSearch(q);
     const nodes = [...preface];
     if (r.status === 'nokey') {
@@ -52,6 +55,7 @@ export function wireLookup(form, extra, { onPosterChange, onBarcode } = {}) {
           if (res.year) f.year.value = String(res.year);
           Object.assign(extra, { tmdbId: res.tmdbId, posterPath: res.posterPath, mediaType: res.mediaType });
           onPosterChange?.(res.posterPath);
+          f.title.dispatchEvent(new Event('input'));
           say(el('p', { className: 'ok', textContent: `Filled from TMDB: ${titleYear(res)}. Check the edition details below.` }));
         });
         list.append(el('li', {}, btn));
@@ -61,49 +65,49 @@ export function wireLookup(form, extra, { onPosterChange, onBarcode } = {}) {
     say(...nodes);
   }
 
-  async function lookupBarcode(code) {
+  async function useBarcode(code) {
     const v = validateBarcode(code);
-    if (!v.code) { say(el('p', { className: 'error', textContent: 'Enter or scan a barcode first.' })); return; }
+    if (!v.code) return;
     f.ean.value = v.code;
     f.ean.dispatchEvent(new Event('input'));
-    onBarcode?.(v.code);
-    busy(`Looking up ${v.code}…`);
-    const r = await upcLookup(v.code);
-    const used = await upcUsageToday();
-    const usage = el('p', { className: 'hint small', textContent: r.cached ? 'From this device\'s lookup cache.' : `UPCitemdb lookups today on this device: ${used} of ${CONFIG.upcitemdb.dailyLimit}.` });
-    if (r.status === 'found') {
-      const product = r.items[0];
-      const guess = guessEdition(product.title);
-      const changed = [];
-      if (setSelect(f.format, guess.format)) changed.push('format');
-      if (setSelect(f.packaging, guess.packaging)) changed.push('packaging');
-      const preface = [
-        el('p', {}, 'Barcode listing: ', el('strong', { textContent: product.title })),
-        changed.length ? el('p', { className: 'hint', textContent: `Guessed ${changed.join(' and ')} from the listing. Check them.` }) : null,
-        product.brand ? el('p', { className: 'hint', textContent: `Listed brand: ${product.brand} (often a US distributor, so not filled in).` }) : null,
-        usage,
-      ].filter(Boolean);
-      if (!f.title.value.trim()) f.title.value = cleanTitle(product.title);
-      await searchTmdb(product.title, preface);
-    } else {
-      const msg = {
-        notfound: 'UPCitemdb doesn\'t know this barcode (common for UK editions). Search by title instead.',
-        limit: r.message || `Daily lookup limit (${CONFIG.upcitemdb.dailyLimit}) reached on this device. Search by title instead.`,
-        offline: 'You\'re offline. The barcode is saved; fill the rest by hand or search later.',
-        error: r.message || 'Lookup failed.',
-      }[r.status];
-      const actions = el('div', { className: 'actions' });
-      const searchBtn = el('button', { type: 'button', textContent: 'Search TMDB by title' });
-      searchBtn.addEventListener('click', () => searchTmdb(f.title.value));
-      actions.append(searchBtn);
-      say(el('p', { className: r.status === 'error' ? 'error' : 'hint', textContent: msg }), usage, actions);
+    const local = await localMatches(v.code);
+    const notes = [el('p', {}, 'Barcode ', el('strong', { textContent: v.code }), ' captured.')];
+    for (const i of local.items) {
+      notes.push(el('p', { className: 'warn-text' }, 'You already own ', el('a', { href: `#/item/${encodeURIComponent(i.id)}`, textContent: titleYear(i) }), ` (${i.format}).`));
     }
+    for (const w of local.wants) {
+      notes.push(el('p', { className: 'ok' }, 'On your want list: ', el('a', { href: `#/want/${encodeURIComponent(w.id)}`, textContent: titleYear(w) }), '.'));
+    }
+    // Reuse details from a record with the same barcode (e.g. scanning a want you've just bought).
+    const known = local.items[0] || local.wants[0];
+    if (known && !f.title.value.trim()) {
+      f.title.value = known.title;
+      if (known.year) f.year.value = String(known.year);
+      for (const k of ['format', 'packaging', 'edition', 'distributor', 'region']) {
+        if (known[k] && f[k] && [...(f[k].options || [{ value: known[k] }])].some((o) => o.value === known[k])) {
+          f[k].value = known[k];
+          if (k === 'format') f.format.dispatchEvent(new Event('change'));
+        }
+      }
+      Object.assign(extra, { tmdbId: known.tmdbId ?? null, posterPath: known.posterPath ?? null, mediaType: known.mediaType ?? null });
+      onPosterChange?.(known.posterPath);
+      f.title.dispatchEvent(new Event('input'));
+      notes.push(el('p', { className: 'hint', textContent: 'Details copied from the matching record. Check them.' }));
+      say(...notes);
+      return;
+    }
+    if (f.title.value.trim()) {
+      await searchTmdb(f.title.value, notes);
+      return;
+    }
+    notes.push(el('p', { className: 'hint', textContent: 'Free barcode databases don\'t allow lookups from this app, so type the title and tap Search title.' }));
+    say(...notes);
+    f.title.focus();
   }
 
   form.querySelector('[data-action="scan"]').addEventListener('click', async () => {
     const code = await openScanner();
-    if (code) await lookupBarcode(code);
+    if (code) await useBarcode(code);
   });
-  form.querySelector('[data-action="lookup-ean"]').addEventListener('click', () => lookupBarcode(f.ean.value));
   form.querySelector('[data-action="search-title"]').addEventListener('click', () => searchTmdb(f.title.value));
 }

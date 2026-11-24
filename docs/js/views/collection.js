@@ -3,10 +3,11 @@ import * as db from '../db.js';
 import { formatPence } from '../money.js';
 import { itemValue, totals } from '../value.js';
 import { clone, view, setActiveTab, fillSelect, poster, titleYear, plural, el } from '../ui.js';
+import { matches } from '../collections.js';
 
-const listState = { search: '', format: '', sort: 'title' };
+const listState = { search: '', format: '', sort: 'title', collection: '' };
 
-function matches(item, q) {
+function matchesSearch(item, q) {
   if (!q) return true;
   const hay = [item.title, item.ean, item.distributor, item.edition, item.year, item.packaging].join(' ').toLowerCase();
   return q.toLowerCase().split(/\s+/).every((t) => hay.includes(t));
@@ -20,7 +21,7 @@ function sortItems(items, sort, logs) {
 }
 
 export async function renderCollection(params, ctx) {
-  const [all, logs] = await Promise.all([db.getAll('items'), db.getAll('priceLog')]);
+  const [all, logs, collections] = await Promise.all([db.getAll('items'), db.getAll('priceLog'), db.getAll('collections')]);
   if (!ctx.isCurrent()) return;
   setActiveTab('collection');
   const root = view();
@@ -43,13 +44,24 @@ export async function renderCollection(params, ctx) {
   search.value = listState.search;
   format.value = listState.format;
   sort.value = listState.sort;
+  const collFilter = root.querySelector('#filter-collection');
+  collFilter.hidden = collections.length === 0;
+  for (const c of [...collections].sort((a, b) => a.name.localeCompare(b.name, CONFIG.locale))) collFilter.append(new Option(c.name, c.id));
+  if (!collections.some((c) => c.id === listState.collection) && listState.collection !== '__none') listState.collection = '';
+  collFilter.value = listState.collection;
+  const inCollection = (item) => {
+    if (!listState.collection) return true;
+    if (listState.collection === '__none') return !collections.some((c) => c.entries.some((e) => matches(e, item)));
+    const c = collections.find((x) => x.id === listState.collection);
+    return c.entries.some((e) => matches(e, item));
+  };
 
   const list = root.querySelector('#item-list');
   const empty = root.querySelector('#empty');
 
   const draw = () => {
     const shown = sortItems(
-      all.filter((i) => matches(i, listState.search) && (!listState.format || i.format === listState.format)),
+      all.filter((i) => matchesSearch(i, listState.search) && (!listState.format || i.format === listState.format) && inCollection(i)),
       listState.sort, logs,
     );
     list.replaceChildren(...shown.map((item) => {
@@ -74,5 +86,6 @@ export async function renderCollection(params, ctx) {
   search.addEventListener('input', () => { listState.search = search.value.trim(); draw(); });
   format.addEventListener('change', () => { listState.format = format.value; draw(); });
   sort.addEventListener('change', () => { listState.sort = sort.value; draw(); });
+  collFilter.addEventListener('change', () => { listState.collection = collFilter.value; draw(); });
   draw();
 }

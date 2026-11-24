@@ -60,7 +60,7 @@ export async function renderWants(params, ctx) {
         poster(w.posterPath),
         el('span', { className: 'main' },
           el('span', { className: 'title', textContent: titleYear(w) }),
-          el('span', { className: 'meta', textContent: [w.format, w.packaging !== 'Standard' ? w.packaging : '', `${conditionLabel(w.wantedCondition)} or better`, target].filter(Boolean).join(' · ') }),
+          el('span', { className: 'meta', textContent: [w.format || 'Any format', w.packaging && w.packaging !== 'Standard' ? w.packaging : '', `${conditionLabel(w.wantedCondition)} or better`, target].filter(Boolean).join(' · ') }),
           el('span', { className: 'meta strong', textContent: text }),
           flags.length ? el('span', { className: 'tags' }, ...flags) : null));
       return el('li', {}, a);
@@ -83,7 +83,7 @@ export async function renderWantForm({ id }, ctx) {
   root.replaceChildren(clone('tpl-want-form'));
   const form = root.querySelector('#want-form');
   const f = form.elements;
-  fillSelect(f.format, CONFIG.formats);
+  fillSelect(f.format, CONFIG.formats, { blank: 'Any format' });
   fillSelect(f.packaging, CONFIG.packaging);
   fillSelect(f.wantedCondition, CONFIG.conditions);
   f.wantedCondition.value = CONFIG.defaultWantedCondition;
@@ -135,7 +135,7 @@ export async function renderWantForm({ id }, ctx) {
       title,
       year: year ? +year : null,
       ean: normaliseBarcode(f.ean.value) || null,
-      format: f.format.value,
+      format: f.format.value || null,
       packaging: f.packaging.value,
       edition: f.edition.value.trim() || null,
       wantedCondition: f.wantedCondition.value,
@@ -172,7 +172,7 @@ export async function renderWantDetail({ id }, ctx) {
   root.querySelector('[data-slot="poster"]').replaceChildren(poster(want.posterPath, CONFIG.tmdb.posterSize));
   root.querySelector('[data-field="title"]').textContent = titleYear(want);
   root.querySelector('[data-field="meta"]').textContent = [
-    want.format, want.packaging !== 'Standard' ? want.packaging : '', want.edition, want.ean ? `Barcode ${want.ean}` : '',
+    want.format || 'Any format', want.packaging && want.packaging !== 'Standard' ? want.packaging : '', want.edition, want.ean ? `Barcode ${want.ean}` : '',
   ].filter(Boolean).join(' · ');
   root.querySelector('[data-field="wanted"]').textContent = `${conditionLabel(want.wantedCondition)} or better`
     + (want.targetPrice != null ? `, target ${formatPence(want.targetPrice)}` : ', no target price');
@@ -282,9 +282,9 @@ export async function renderWantDetail({ id }, ctx) {
       title: want.title,
       year: want.year ?? null,
       ean: want.ean ?? null,
-      format: want.format,
-      packaging: want.packaging,
-      region: CONFIG.defaultRegionByFormat[want.format] || 'Unknown',
+      format: want.format || CONFIG.formats[0],
+      packaging: want.packaging || 'Standard',
+      region: CONFIG.defaultRegionByFormat[want.format || CONFIG.formats[0]] || 'Unknown',
       condition: best?.condition || want.wantedCondition,
       distributor: null,
       edition: want.edition ?? null,

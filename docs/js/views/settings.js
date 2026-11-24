@@ -1,7 +1,7 @@
 import { CONFIG } from '../config.js';
 import * as db from '../db.js';
 import { buildBackup, backupFileName, validateBackup } from '../backup.js';
-import { getTmdbKey, setTmdbKey, testConnections, upcUsageToday } from '../lookup.js';
+import { getTmdbKey, setTmdbKey, testConnections } from '../lookup.js';
 import { collectionCsv, wantsCsv, itemsFromCsv } from '../csv.js';
 import { collectionText, wantsText, snapshotFrom, encodeSnapshot, shareUrl } from '../share.js';
 import {
@@ -14,7 +14,6 @@ const keepDeviceMeta = (key) => key.startsWith(CONFIG.secretMetaPrefix) || key.s
 export async function renderSettings(params, ctx) {
   const lastBackup = await db.getMeta('lastBackupAt');
   const tmdbKey = (await getTmdbKey()) || '';
-  const upcUsed = await upcUsageToday();
   const canReport = !!navigator.storage?.persisted;
   const persisted = canReport ? await navigator.storage.persisted() : false;
   const est = canReport && navigator.storage.estimate ? await navigator.storage.estimate() : null;
@@ -28,7 +27,6 @@ export async function renderSettings(params, ctx) {
   // ---------- lookups ----------
   const keyInput = q('[data-field="tmdbKey"]');
   keyInput.value = tmdbKey;
-  q('[data-field="upcUsage"]').textContent = `${upcUsed} of ${CONFIG.upcitemdb.dailyLimit}`;
   q('[data-action="save-key"]').addEventListener('click', async () => {
     await setTmdbKey(keyInput.value.trim());
     toast(keyInput.value.trim() ? 'TMDB key saved on this device.' : 'TMDB key removed.');
