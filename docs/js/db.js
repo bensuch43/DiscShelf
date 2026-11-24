@@ -71,8 +71,13 @@ export function setMeta(key, value) {
   return put('meta', { key, value });
 }
 
-/** Wipe every store and load the given data in one transaction. */
-export async function replaceAll(data) {
+/**
+ * Wipe every store and load the given data in one transaction.
+ * Device-only meta (API keys, lookup cache, usage counter) is never in a
+ * backup, so it is kept rather than wiped.
+ */
+export async function replaceAll(data, keepMeta = () => false) {
+  const kept = (await getAll('meta')).filter((m) => keepMeta(m.key));
   const db = await openDb();
   const tx = db.transaction(DATA_STORES, 'readwrite');
   for (const name of DATA_STORES) {
@@ -80,6 +85,7 @@ export async function replaceAll(data) {
     store.clear();
     for (const row of data[name] || []) store.put(row);
   }
+  for (const row of kept) tx.objectStore('meta').put(row);
   return completed(tx);
 }
 

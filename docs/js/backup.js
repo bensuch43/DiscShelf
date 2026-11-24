@@ -3,7 +3,7 @@ import { CONFIG } from './config.js';
 import { getAll } from './db.js';
 
 export const BACKUP_FORMAT = 'discshelf-backup';
-const EXCLUDED_META = ['lastBackupAt'];
+const EXCLUDED_META = ['lastBackupAt', 'upc.usage'];
 
 export async function buildBackup() {
   const [items, wants, priceLog, meta] = await Promise.all(
@@ -17,7 +17,9 @@ export async function buildBackup() {
     items,
     wants,
     priceLog,
-    meta: meta.filter((m) => !EXCLUDED_META.includes(m.key) && !m.key.startsWith(CONFIG.secretMetaPrefix)),
+    meta: meta.filter((m) => !EXCLUDED_META.includes(m.key)
+      && !m.key.startsWith(CONFIG.secretMetaPrefix)
+      && !m.key.startsWith(CONFIG.cacheMetaPrefix)),
   };
 }
 
