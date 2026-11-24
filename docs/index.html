@@ -5,7 +5,7 @@
   <!-- Strict CSP. GitHub Pages can't set headers, so it's a meta tag
        (frame-ancestors is ignored in meta; see README). External hosts are
        listed here and in js/config.js, nowhere else. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://image.tmdb.org; connect-src 'self' https://api.upcitemdb.com https://api.themoviedb.org; media-src 'self' blob: mediastream:; manifest-src 'self'; worker-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://image.tmdb.org; connect-src 'self' https://api.themoviedb.org; media-src 'self' blob: mediastream:; manifest-src 'self'; worker-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
   <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#16181d">
@@ -31,7 +31,8 @@
   <div id="toast" class="toast" role="status" hidden></div>
 
   <nav class="tabbar" aria-label="Main">
-    <a href="#/collection" data-tab="collection">Collection</a>
+    <a href="#/collection" data-tab="collection">Discs</a>
+    <a href="#/collections" data-tab="collections">Collections</a>
     <a href="#/wants" data-tab="wants">Wants</a>
     <a href="#/add" data-tab="add">Add</a>
     <a href="#/settings" data-tab="settings">Settings</a>
@@ -56,6 +57,10 @@
           <option value="value">Value (high–low)</option>
         </select>
       </div>
+      <select id="filter-collection" aria-label="Filter by collection" hidden>
+        <option value="">All discs</option>
+        <option value="__none">Not in any collection</option>
+      </select>
     </div>
     <ul class="list" id="item-list" aria-label="Items"></ul>
     <p class="empty" id="empty" hidden>Nothing here yet. Tap <a href="#/add">Add</a> to log your first disc.</p>
@@ -78,7 +83,7 @@
         <button type="button" class="primary" data-action="scan">Scan barcode</button>
         <button type="button" data-action="search-title">Search title</button>
       </div>
-      <p class="hint small">Scan, or type a title and tap Search title. Everything can also be filled by hand.</p>
+      <p class="hint small">Scan the barcode, then type the title and tap Search title. Everything can also be filled by hand.</p>
       <div class="lookup-panel" data-panel="lookup" aria-live="polite" hidden></div>
       <div class="poster-slot" data-slot="poster" hidden></div>
       <label>Title <span class="req">*</span><input name="title" required autocomplete="off"></label>
@@ -88,7 +93,6 @@
       </div>
       <label>Barcode (EAN/UPC)<input name="ean" inputmode="numeric" autocomplete="off"></label>
       <p class="field-note" data-note="ean" hidden></p>
-      <div class="inline-action"><button type="button" class="small" data-action="lookup-ean">Look up barcode</button></div>
       <div class="row">
         <label>Format<select name="format"></select></label>
         <label>Packaging<select name="packaging"></select></label>
@@ -110,13 +114,103 @@
         <label>Date bought<input name="purchasedOn" type="date"></label>
       </div>
       <label>Notes<textarea name="notes" rows="3"></textarea></label>
+      <fieldset class="collections-field" data-field="collections">
+        <legend>Collections</legend>
+        <p class="hint small" data-note="no-collections">Create collections (e.g. Disney Classics) in the Collections tab, then tick them here.</p>
+      </fieldset>
       <p class="error" data-error hidden></p>
       <div class="actions">
         <button type="submit" class="primary">Save</button>
-        <a href="#/collection" class="button">Cancel</a>
+        <a href="#/collection" class="button" data-action="cancel">Cancel</a>
         <button type="button" class="danger" data-action="delete" hidden>Delete</button>
       </div>
     </form>
+  </template>
+
+  <template id="tpl-collections">
+    <ul class="list" id="collection-list" aria-label="Collections"></ul>
+    <section class="card">
+      <h2>New collection</h2>
+      <p class="hint small">Checklists of films, like Disney Classics or a director's work. A film can be in any number of collections; discs you own tick it off.</p>
+      <form id="new-collection" class="form" novalidate>
+        <label>New collection name<input name="name" autocomplete="off" placeholder="e.g. Disney Classics"></label>
+        <label>Description (optional)<input name="description" autocomplete="off"></label>
+        <p class="error" data-error hidden></p>
+        <button type="submit" class="primary">Create collection</button>
+      </form>
+    </section>
+    <p class="empty" id="collections-empty" hidden>No collections yet.</p>
+  </template>
+
+  <template id="tpl-collection-detail">
+    <section class="card">
+      <h2 data-field="name"></h2>
+      <p class="hint" data-field="description"></p>
+      <p data-field="progress"></p>
+      <progress data-field="bar" aria-label="Owned"></progress>
+      <div class="actions">
+        <button type="button" class="small" data-action="edit-collection">Rename</button>
+        <button type="button" class="small" data-action="share-collection">Share checklist</button>
+        <button type="button" class="small danger" data-action="delete-collection">Delete collection</button>
+      </div>
+      <form id="edit-collection" class="form" novalidate hidden>
+        <label>Name<input name="name" autocomplete="off"></label>
+        <label>Description<input name="description" autocomplete="off"></label>
+        <button type="submit" class="primary">Save</button>
+      </form>
+    </section>
+    <div class="filters row">
+      <select id="entry-filter" aria-label="Show">
+        <option value="all">All films</option>
+        <option value="owned">Owned</option>
+        <option value="missing">Missing</option>
+        <option value="wanted">On want list</option>
+      </select>
+      <select id="entry-sort" aria-label="Order">
+        <option value="list">List order</option>
+        <option value="title">Title A–Z</option>
+        <option value="year">Year</option>
+      </select>
+    </div>
+    <ul class="list entries" id="entry-list" aria-label="Films in this collection"></ul>
+    <p class="empty" id="entries-empty" hidden>No films yet. Add some below.</p>
+
+    <section class="card add-films">
+      <h2>Add films</h2>
+      <p data-field="addStatus" hidden></p>
+      <details open>
+        <summary>Search TMDB</summary>
+        <form id="entry-search" class="inline-form" novalidate>
+          <input name="query" aria-label="Film or series title" placeholder="Film or series title" autocomplete="off">
+          <button type="submit">Search</button>
+        </form>
+        <ul class="pick-list" data-field="searchResults"></ul>
+      </details>
+      <details>
+        <summary>Paste a list of titles</summary>
+        <form id="entry-paste" class="form" novalidate>
+          <label>One title per line. Put years in brackets, e.g. Pinocchio (1940).
+            <textarea name="titles" rows="8" placeholder="Snow White and the Seven Dwarfs (1937)&#10;Pinocchio (1940)&#10;Fantasia (1940)"></textarea>
+          </label>
+          <button type="submit">Add titles</button>
+        </form>
+      </details>
+      <details>
+        <summary>Import a TMDB franchise</summary>
+        <form id="entry-franchise" class="inline-form" novalidate>
+          <input name="franchise" aria-label="Franchise name" placeholder="e.g. Toy Story" autocomplete="off">
+          <button type="submit">Find</button>
+        </form>
+        <ul class="pick-list" data-field="franchiseResults"></ul>
+      </details>
+      <details>
+        <summary>Import a public TMDB list</summary>
+        <form id="entry-tmdb-list" class="inline-form" novalidate>
+          <input name="listUrl" aria-label="TMDB list link" placeholder="https://www.themoviedb.org/list/…" autocomplete="off" inputmode="url">
+          <button type="submit">Import</button>
+        </form>
+      </details>
+    </section>
   </template>
 
   <template id="tpl-wants">
@@ -148,7 +242,6 @@
       <label>Year<input name="year" inputmode="numeric" maxlength="4" autocomplete="off"></label>
       <label>Barcode (EAN/UPC)<input name="ean" inputmode="numeric" autocomplete="off"></label>
       <p class="field-note" data-note="ean" hidden></p>
-      <div class="inline-action"><button type="button" class="small" data-action="lookup-ean">Look up barcode</button></div>
       <div class="row">
         <label>Format<select name="format"></select></label>
         <label>Packaging<select name="packaging"></select></label>
@@ -228,7 +321,6 @@
         <button type="button" data-action="test-connections">Test connections</button>
       </div>
       <ul class="results" data-field="connectionResults"></ul>
-      <p class="hint small">UPCitemdb barcode lookups today on this device: <strong data-field="upcUsage"></strong> (free plan, no key). Each barcode is looked up once and then remembered.</p>
     </section>
 
     <section class="card">
@@ -302,7 +394,7 @@
       <h2>About</h2>
       <p>DiscShelf <span data-field="version"></span>. Works offline. Nothing leaves this device unless you export it, share it, or look something up.</p>
       <p class="hint small">This product uses the TMDB API but is not endorsed or certified by TMDB. Film and TV data and posters from <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">The Movie Database (TMDB)</a>.</p>
-      <p class="hint small">Barcode lookups by <a href="https://www.upcitemdb.com/" target="_blank" rel="noopener noreferrer">UPCitemdb</a>. Scanning uses <a href="vendor/ZXING-LICENSE.txt" target="_blank">ZXing</a> (Apache License 2.0).</p>
+      <p class="hint small">Scanning uses <a href="vendor/ZXING-LICENSE.txt" target="_blank">ZXing</a> (Apache License 2.0).</p>
     </section>
   </template>
 

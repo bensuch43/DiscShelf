@@ -1,7 +1,7 @@
 // DiscShelf service worker: precache the app shell, serve it cache-first,
 // and keep TMDB poster images in a separate long-lived cache for offline use.
 // Bump VERSION with every release (must match CONFIG.version; a test checks).
-const VERSION = '0.4.0';
+const VERSION = '0.5.0';
 const CACHE = `discshelf-${VERSION}`;
 const POSTER_CACHE = 'discshelf-posters-v1'; // survives app updates
 const POSTER_HOST = 'https://image.tmdb.org';
@@ -24,12 +24,14 @@ const ASSETS = [
   './js/csv.js',
   './js/share.js',
   './js/ui.js',
+  './js/collections.js',
   './js/views/collection.js',
   './js/views/item-form.js',
   './js/views/lookup-panel.js',
   './js/views/wants.js',
   './js/views/settings.js',
   './js/views/shared.js',
+  './js/views/collections.js',
   './vendor/zxing.min.js',
   './vendor/ZXING-LICENSE.txt',
   './icons/icon-192.png',
