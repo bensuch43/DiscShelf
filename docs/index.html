@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <!-- Strict CSP. GitHub Pages can't set headers, so it's a meta tag
+       (frame-ancestors is ignored in meta; see README). Later releases add
+       API hosts to connect-src/img-src here and nowhere else. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#16181d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DiscShelf">
+  <title>DiscShelf</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/app.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>DiscShelf</h1>
+    <span id="offline-badge" class="badge" hidden>Offline</span>
+  </header>
+
+  <div id="banners"></div>
+  <main id="view" tabindex="-1" aria-live="polite"></main>
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <nav class="tabbar" aria-label="Main">
+    <a href="#/collection" data-tab="collection">Collection</a>
+    <a href="#/add" data-tab="add">Add</a>
+    <a href="#/settings" data-tab="settings">Settings</a>
+  </nav>
+
+  <!-- ===== Templates (cloned by app.js; user data only ever set via textContent) ===== -->
+  <template id="tpl-collection">
+    <section class="totals card" aria-label="Collection totals">
+      <div><span class="label">Items</span><strong data-total="count">0</strong></div>
+      <div><span class="label">Paid</span><strong data-total="paid">£0.00</strong></div>
+      <div><span class="label">Value</span><strong data-total="value">£0.00</strong></div>
+      <p class="hint" data-total="unpriced" hidden></p>
+    </section>
+    <div class="filters">
+      <input type="search" id="search" placeholder="Search title, barcode, distributor" aria-label="Search collection" autocomplete="off">
+      <div class="row">
+        <select id="filter-format" aria-label="Filter by format"><option value="">All formats</option></select>
+        <select id="sort" aria-label="Sort by">
+          <option value="title">Title A–Z</option>
+          <option value="recent">Recently added</option>
+          <option value="value">Value (high–low)</option>
+        </select>
+      </div>
+    </div>
+    <ul class="list" id="item-list" aria-label="Items"></ul>
+    <p class="empty" id="empty" hidden>Nothing here yet. Tap <a href="#/add">Add</a> to log your first disc.</p>
+  </template>
+
+  <template id="tpl-item-row">
+    <li><a class="item-row">
+      <span class="main">
+        <span class="title"></span>
+        <span class="meta"></span>
+      </span>
+      <span class="value"></span>
+    </a></li>
+  </template>
+
+  <template id="tpl-item-form">
+    <form id="item-form" class="card form" novalidate>
+      <h2 data-heading>Add a disc</h2>
+      <label>Title <span class="req">*</span><input name="title" required autocomplete="off"></label>
+      <div class="row">
+        <label>Year<input name="year" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+        <label>Discs<input name="discCount" inputmode="numeric" maxlength="3" autocomplete="off"></label>
+      </div>
+      <label>Barcode (EAN/UPC)<input name="ean" inputmode="numeric" autocomplete="off"></label>
+      <p class="field-note" data-note="ean" hidden></p>
+      <div class="row">
+        <label>Format<select name="format"></select></label>
+        <label>Packaging<select name="packaging"></select></label>
+      </div>
+      <div class="row">
+        <label>Region<select name="region"></select></label>
+        <label>Condition<select name="condition"></select></label>
+      </div>
+      <label>Distributor<input name="distributor" list="distributors" autocomplete="off"></label>
+      <datalist id="distributors"></datalist>
+      <label>Edition<input name="edition" placeholder="e.g. Zavvi exclusive, Limited 4K steelbook" autocomplete="off"></label>
+      <div class="row">
+        <label>Price paid (£)<input name="pricePaid" inputmode="decimal" autocomplete="off"></label>
+        <label>Estimated value (£)<input name="estimatedValue" inputmode="decimal" autocomplete="off"></label>
+      </div>
+      <div class="row">
+        <label>Bought from<input name="purchasedFrom" autocomplete="off"></label>
+        <label>Date bought<input name="purchasedOn" type="date"></label>
+      </div>
+      <label>Notes<textarea name="notes" rows="3"></textarea></label>
+      <p class="error" data-error hidden></p>
+      <div class="actions">
+        <button type="submit" class="primary">Save</button>
+        <a href="#/collection" class="button">Cancel</a>
+        <button type="button" class="danger" data-action="delete" hidden>Delete</button>
+      </div>
+    </form>
+  </template>
+
+  <template id="tpl-settings">
+    <section class="card">
+      <h2>Backup</h2>
+      <p>Last backup: <strong data-field="lastBackup">never</strong></p>
+      <div class="actions">
+        <button type="button" class="primary" data-action="download-backup">Download backup</button>
+        <button type="button" data-action="share-backup" hidden>Share backup</button>
+      </div>
+      <p class="hint">Your data lives only on this device. Save a backup to iCloud Drive or Files regularly.</p>
+    </section>
+    <section class="card">
+      <h2>Restore</h2>
+      <label>Backup file<input type="file" accept="application/json,.json" data-field="restoreFile"></label>
+      <fieldset>
+        <legend>How to restore</legend>
+        <label class="inline"><input type="radio" name="restoreMode" value="merge" checked> Merge (keep newer copy of each record)</label>
+        <label class="inline"><input type="radio" name="restoreMode" value="replace"> Replace everything on this device</label>
+      </fieldset>
+      <button type="button" data-action="restore">Restore</button>
+      <p class="error" data-error hidden></p>
+    </section>
+    <section class="card">
+      <h2>Storage</h2>
+      <p data-field="storageStatus">Checking…</p>
+      <button type="button" data-action="persist" hidden>Keep my data (ask for persistent storage)</button>
+    </section>
+    <section class="card">
+      <h2>About</h2>
+      <p>DiscShelf <span data-field="version"></span>. Works offline. Nothing leaves this device unless you export it.</p>
+    </section>
+  </template>
+</body>
+</html>
