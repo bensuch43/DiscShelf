@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <!-- Strict CSP. GitHub Pages can't set headers, so it's a meta tag
-       (frame-ancestors is ignored in meta; see README). Later releases add
-       API hosts to connect-src/img-src here and nowhere else. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+       (frame-ancestors is ignored in meta; see README). External hosts are
+       listed here and in js/config.js, nowhere else. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://image.tmdb.org; connect-src 'self' https://api.upcitemdb.com https://api.themoviedb.org; media-src 'self' blob: mediastream:; manifest-src 'self'; worker-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
   <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#16181d">
@@ -32,11 +32,13 @@
 
   <nav class="tabbar" aria-label="Main">
     <a href="#/collection" data-tab="collection">Collection</a>
+    <a href="#/wants" data-tab="wants">Wants</a>
     <a href="#/add" data-tab="add">Add</a>
     <a href="#/settings" data-tab="settings">Settings</a>
   </nav>
 
-  <!-- ===== Templates (cloned by app.js; user data only ever set via textContent) ===== -->
+  <!-- ===== Templates (cloned by JS; user data only ever set via textContent) ===== -->
+
   <template id="tpl-collection">
     <section class="totals card" aria-label="Collection totals">
       <div><span class="label">Items</span><strong data-total="count">0</strong></div>
@@ -72,6 +74,13 @@
   <template id="tpl-item-form">
     <form id="item-form" class="card form" novalidate>
       <h2 data-heading>Add a disc</h2>
+      <div class="fill-bar">
+        <button type="button" class="primary" data-action="scan">Scan barcode</button>
+        <button type="button" data-action="search-title">Search title</button>
+      </div>
+      <p class="hint small">Scan, or type a title and tap Search title. Everything can also be filled by hand.</p>
+      <div class="lookup-panel" data-panel="lookup" aria-live="polite" hidden></div>
+      <div class="poster-slot" data-slot="poster" hidden></div>
       <label>Title <span class="req">*</span><input name="title" required autocomplete="off"></label>
       <div class="row">
         <label>Year<input name="year" inputmode="numeric" maxlength="4" autocomplete="off"></label>
@@ -79,6 +88,7 @@
       </div>
       <label>Barcode (EAN/UPC)<input name="ean" inputmode="numeric" autocomplete="off"></label>
       <p class="field-note" data-note="ean" hidden></p>
+      <div class="inline-action"><button type="button" class="small" data-action="lookup-ean">Look up barcode</button></div>
       <div class="row">
         <label>Format<select name="format"></select></label>
         <label>Packaging<select name="packaging"></select></label>
@@ -94,6 +104,7 @@
         <label>Price paid (£)<input name="pricePaid" inputmode="decimal" autocomplete="off"></label>
         <label>Estimated value (£)<input name="estimatedValue" inputmode="decimal" autocomplete="off"></label>
       </div>
+      <p class="hint small" data-note="value" hidden></p>
       <div class="row">
         <label>Bought from<input name="purchasedFrom" autocomplete="off"></label>
         <label>Date bought<input name="purchasedOn" type="date"></label>
@@ -108,7 +119,151 @@
     </form>
   </template>
 
+  <template id="tpl-wants">
+    <section class="card wants-head">
+      <div>
+        <strong data-total="wants"></strong>
+        <span class="hint" data-total="under"></span>
+      </div>
+      <a href="#/wants/new" class="button primary">Add a want</a>
+    </section>
+    <div class="filters">
+      <input type="search" id="want-search" placeholder="Search wants" aria-label="Search wants" autocomplete="off">
+      <label class="inline"><input type="checkbox" id="show-bought"> Show bought</label>
+    </div>
+    <ul class="list" id="want-list" aria-label="Wants"></ul>
+    <p class="empty" id="wants-empty" hidden>No wants yet. Tap <a href="#/wants/new">Add a want</a> to start your list.</p>
+  </template>
+
+  <template id="tpl-want-form">
+    <form id="want-form" class="card form" novalidate>
+      <h2 data-heading>Add a want</h2>
+      <div class="fill-bar">
+        <button type="button" class="primary" data-action="scan">Scan barcode</button>
+        <button type="button" data-action="search-title">Search title</button>
+      </div>
+      <div class="lookup-panel" data-panel="lookup" aria-live="polite" hidden></div>
+      <div class="poster-slot" data-slot="poster" hidden></div>
+      <label>Title <span class="req">*</span><input name="title" required autocomplete="off"></label>
+      <label>Year<input name="year" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+      <label>Barcode (EAN/UPC)<input name="ean" inputmode="numeric" autocomplete="off"></label>
+      <p class="field-note" data-note="ean" hidden></p>
+      <div class="inline-action"><button type="button" class="small" data-action="lookup-ean">Look up barcode</button></div>
+      <div class="row">
+        <label>Format<select name="format"></select></label>
+        <label>Packaging<select name="packaging"></select></label>
+      </div>
+      <label>Edition<input name="edition" placeholder="Leave blank if any edition will do" autocomplete="off"></label>
+      <div class="row">
+        <label>Wanted condition (or better)<select name="wantedCondition"></select></label>
+        <label>Target price (£)<input name="targetPrice" inputmode="decimal" autocomplete="off"></label>
+      </div>
+      <label>Notes<textarea name="notes" rows="2"></textarea></label>
+      <p class="error" data-error hidden></p>
+      <div class="actions">
+        <button type="submit" class="primary">Save</button>
+        <a href="#/wants" class="button" data-action="cancel">Cancel</a>
+      </div>
+    </form>
+  </template>
+
+  <template id="tpl-want-detail">
+    <section class="card want-head">
+      <div data-slot="poster"></div>
+      <div>
+        <h2 data-field="title"></h2>
+        <p class="meta" data-field="meta"></p>
+        <p data-field="wanted"></p>
+        <p class="tag" data-field="status" hidden>Bought</p>
+      </div>
+    </section>
+    <section class="card">
+      <h3>Cheapest in your condition or better</h3>
+      <div data-field="cheapest" class="cheapest"></div>
+    </section>
+    <section class="card">
+      <h3>Where to look</h3>
+      <p class="hint small">Opens each shop's own search. Barcode is exact where the shop supports it; title finds more.</p>
+      <ul class="links" data-field="links"></ul>
+    </section>
+    <section class="card">
+      <h3>Log a price</h3>
+      <form id="log-form" class="form" novalidate>
+        <div class="row">
+          <label>Shop<select name="retailer"></select></label>
+          <label>Condition<select name="condition"></select></label>
+        </div>
+        <label data-wrap="otherRetailer" hidden>Retailer name<input name="otherRetailer" autocomplete="off"></label>
+        <div class="row">
+          <label>Price (£)<input name="price" inputmode="decimal" autocomplete="off"></label>
+          <label>Postage (£)<input name="postage" inputmode="decimal" autocomplete="off" placeholder="0.00"></label>
+        </div>
+        <label>Date seen<input name="seenOn" type="date"></label>
+        <label>Listing link (optional)<input name="url" type="url" inputmode="url" autocomplete="off" placeholder="https://"></label>
+        <label>Note (optional)<input name="note" autocomplete="off"></label>
+        <p class="error" data-error hidden></p>
+        <button type="submit" class="primary">Log price</button>
+      </form>
+    </section>
+    <section class="card">
+      <h3>Price history <span data-field="history-count"></span></h3>
+      <ul class="history" data-field="history"></ul>
+    </section>
+    <div class="actions">
+      <a class="button" data-action="edit">Edit</a>
+      <button type="button" class="primary" data-action="bought">Mark as bought</button>
+      <button type="button" class="danger" data-action="delete-want">Delete</button>
+    </div>
+  </template>
+
   <template id="tpl-settings">
+    <section class="card">
+      <h2>Lookups</h2>
+      <label>TMDB API key or read access token
+        <input type="password" data-field="tmdbKey" autocomplete="off" spellcheck="false" placeholder="Paste from themoviedb.org > Settings > API">
+      </label>
+      <p class="hint small">Stored only on this device and never included in backups. Needed for title search and posters.</p>
+      <div class="actions">
+        <button type="button" data-action="save-key">Save key</button>
+        <button type="button" data-action="test-connections">Test connections</button>
+      </div>
+      <ul class="results" data-field="connectionResults"></ul>
+      <p class="hint small">UPCitemdb barcode lookups today on this device: <strong data-field="upcUsage"></strong> (free plan, no key). Each barcode is looked up once and then remembered.</p>
+    </section>
+
+    <section class="card">
+      <h2>Export and share</h2>
+      <div class="actions">
+        <button type="button" data-action="csv-collection">Collection CSV</button>
+        <button type="button" data-action="csv-wants">Want list CSV</button>
+        <button type="button" data-action="text-collection">Share collection as text</button>
+        <button type="button" data-action="text-wants">Share want list as text</button>
+      </div>
+      <textarea data-field="textPreview" rows="6" readonly hidden aria-label="Text to copy"></textarea>
+      <h3>Share link</h3>
+      <fieldset>
+        <legend>Link to</legend>
+        <label class="inline"><input type="radio" name="shareKind" value="wants" checked> Want list</label>
+        <label class="inline"><input type="radio" name="shareKind" value="collection"> Whole collection</label>
+      </fieldset>
+      <button type="button" data-action="make-link">Create link</button>
+      <textarea data-field="shareLink" rows="3" readonly hidden aria-label="Share link"></textarea>
+      <p class="hint small" data-field="shareNote" hidden></p>
+      <div class="actions" data-field="shareActions" hidden>
+        <button type="button" class="primary" data-action="share-link">Share link</button>
+        <button type="button" data-action="copy-link">Copy link</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Import collection (CSV)</h2>
+      <p class="hint small">Uses the same columns as the collection CSV export (only Title is required). Export one first to use as a template.</p>
+      <label>CSV file<input type="file" accept=".csv,text/csv" data-field="importFile"></label>
+      <label class="inline"><input type="checkbox" data-field="skipDupes" checked> Skip rows whose barcode I already own</label>
+      <button type="button" data-action="import-csv">Import</button>
+      <p class="error" data-error="import" hidden></p>
+    </section>
+
     <section class="card">
       <h2>Backup</h2>
       <p>Last backup: <strong data-field="lastBackup">never</strong></p>
@@ -118,6 +273,7 @@
       </div>
       <p class="hint">Your data lives only on this device. Save a backup to iCloud Drive or Files regularly.</p>
     </section>
+
     <section class="card">
       <h2>Restore</h2>
       <label>Backup file<input type="file" accept="application/json,.json" data-field="restoreFile"></label>
@@ -127,17 +283,44 @@
         <label class="inline"><input type="radio" name="restoreMode" value="replace"> Replace everything on this device</label>
       </fieldset>
       <button type="button" data-action="restore">Restore</button>
-      <p class="error" data-error hidden></p>
+      <p class="error" data-error="restore" hidden></p>
     </section>
+
+    <section class="card">
+      <h2>Retailer links</h2>
+      <p class="hint small">Check each shop's search opens with results for <strong data-field="retailerSample"></strong>. Links marked unverified couldn't be tested during the build; fix any that fail in <code>js/config.js</code>.</p>
+      <ul class="links" data-field="retailerLinks"></ul>
+    </section>
+
     <section class="card">
       <h2>Storage</h2>
       <p data-field="storageStatus">Checking…</p>
       <button type="button" data-action="persist" hidden>Keep my data (ask for persistent storage)</button>
     </section>
+
     <section class="card">
       <h2>About</h2>
-      <p>DiscShelf <span data-field="version"></span>. Works offline. Nothing leaves this device unless you export it.</p>
+      <p>DiscShelf <span data-field="version"></span>. Works offline. Nothing leaves this device unless you export it, share it, or look something up.</p>
+      <p class="hint small">This product uses the TMDB API but is not endorsed or certified by TMDB. Film and TV data and posters from <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">The Movie Database (TMDB)</a>.</p>
+      <p class="hint small">Barcode lookups by <a href="https://www.upcitemdb.com/" target="_blank" rel="noopener noreferrer">UPCitemdb</a>. Scanning uses <a href="vendor/ZXING-LICENSE.txt" target="_blank">ZXing</a> (Apache License 2.0).</p>
     </section>
+  </template>
+
+  <template id="tpl-scanner">
+    <div class="scanner" role="dialog" aria-modal="true" aria-label="Scan barcode">
+      <div class="scanner-video">
+        <video playsinline muted autoplay></video>
+        <div class="guide" aria-hidden="true"></div>
+      </div>
+      <p class="scan-status" data-scan-status>Starting camera…</p>
+      <form class="scanner-manual" novalidate>
+        <label>Or type the barcode<input name="manualEan" inputmode="numeric" autocomplete="off"></label>
+        <div class="actions">
+          <button type="submit" class="primary">Use this barcode</button>
+          <button type="button" data-action="cancel-scan">Cancel</button>
+        </div>
+      </form>
+    </div>
   </template>
 </body>
 </html>
