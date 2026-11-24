@@ -16,10 +16,19 @@ export function openDb() {
           db.createObjectStore('priceLog', { keyPath: 'id' }).createIndex('wantId', 'wantId');
           db.createObjectStore('meta', { keyPath: 'key' });
         }
+        if (event.oldVersion < 2) {
+          // 0.5.0: user-defined collections (checklists of films).
+          db.createObjectStore('collections', { keyPath: 'id' });
+        }
       };
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = () => {
+        const db = request.result;
+        // Let a newer version of the app (in another tab) upgrade the database.
+        db.onversionchange = () => { db.close(); dbPromise = null; };
+        resolve(db);
+      };
       request.onerror = () => reject(request.error);
-      request.onblocked = () => reject(new Error('Database upgrade blocked. Close other tabs running this app.'));
+      request.onblocked = () => reject(new Error('Database upgrade blocked. Close other tabs or windows running DiscShelf, then reload.'));
     });
   }
   return dbPromise;
@@ -36,7 +45,8 @@ const completed = (tx) => new Promise((resolve, reject) => {
   tx.onabort = () => reject(tx.error || new Error('Transaction aborted'));
 });
 
-export const DATA_STORES = ['items', 'wants', 'priceLog', 'meta'];
+export const DATA_STORES = ['items', 'wants', 'priceLog', 'collections', 'meta'];
+const RECORD_STORES = ['items', 'wants', 'priceLog', 'collections'];
 
 export async function getAll(store) {
   const db = await openDb();
@@ -92,13 +102,13 @@ export async function replaceAll(data, keepMeta = () => false) {
 /** Merge by id: the record with the later updatedAt wins. Meta keys are upserted. */
 export async function mergeAll(data) {
   const existing = {};
-  for (const name of ['items', 'wants', 'priceLog']) {
+  for (const name of RECORD_STORES) {
     existing[name] = new Map((await getAll(name)).map((r) => [r.id, r]));
   }
   const db = await openDb();
   const tx = db.transaction(DATA_STORES, 'readwrite');
   const counts = { added: 0, updated: 0, kept: 0 };
-  for (const name of ['items', 'wants', 'priceLog']) {
+  for (const name of RECORD_STORES) {
     const store = tx.objectStore(name);
     for (const row of data[name] || []) {
       const current = existing[name].get(row.id);

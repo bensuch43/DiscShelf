@@ -92,3 +92,9 @@ export const fileStamp = (base, ext) => `${base}-${stamp()}.${ext}`;
 export const formatDate = (iso) => (iso
   ? new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString(CONFIG.locale, { day: 'numeric', month: 'short', year: 'numeric' })
   : '');
+
+// One-shot hand-over of starting values to the next form (e.g. "I own it" on a
+// collection entry opens Add disc pre-filled, then returns to the collection).
+let prefill = null;
+export const setPrefill = (p) => { prefill = p; };
+export const takePrefill = () => { const p = prefill; prefill = null; return p; };

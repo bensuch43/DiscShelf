@@ -6,11 +6,11 @@
 // =====================================================================
 export const CONFIG = Object.freeze({
   appName: 'DiscShelf',
-  version: '0.4.0',
+  version: '0.5.0',
 
   // IndexedDB. Bump dbVersion only with a migration in db.js.
   dbName: 'discshelf',
-  dbVersion: 1,
+  dbVersion: 2, // v2 (0.5.0) added the collections store
 
   locale: 'en-GB',
   currency: 'GBP',
@@ -19,7 +19,7 @@ export const CONFIG = Object.freeze({
 
   // Meta key prefixes never written to backups.
   secretMetaPrefix: 'secret.', // API keys
-  cacheMetaPrefix: 'cache.', // lookup cache (re-creatable)
+  cacheMetaPrefix: 'cache.', // lookup cache (re-creatable; unused since 0.5.0, kept so old data stays out of backups)
 
   // A logged price older than this is shown as stale.
   priceStaleDays: 30,
@@ -52,11 +52,10 @@ export const CONFIG = Object.freeze({
   ],
   defaultWantedCondition: 'very-good',
 
-  // ---- Barcode lookup: UPCitemdb free tier (no key) ----
-  upcitemdb: {
-    lookupUrl: 'https://api.upcitemdb.com/prod/trial/lookup?upc=',
-    dailyLimit: 100, // per IP per UPCitemdb's docs; counted here per device only
-  },
+  // Barcode lookup: UPCitemdb was removed in 0.5.0. Its free endpoint doesn't
+  // allow browser requests (CORS), so it can't work from a static site
+  // without a proxy server. Scanned barcodes are still stored and used for
+  // shop searches, duplicate checks and valuation.
 
   // ---- TMDB: film/TV metadata and posters. User supplies their own key in Settings ----
   tmdb: {

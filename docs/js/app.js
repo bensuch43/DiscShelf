@@ -7,6 +7,7 @@ import { renderItemForm } from './views/item-form.js';
 import { renderWants, renderWantForm, renderWantDetail } from './views/wants.js';
 import { renderSettings } from './views/settings.js';
 import { renderShared } from './views/shared.js';
+import { renderCollections, renderCollectionDetail } from './views/collections.js';
 
 // Each navigation gets a sequence number. Views load their data first and only
 // touch the DOM if they're still the latest navigation, so a slow render can't
@@ -22,6 +23,8 @@ function resolve(hash) {
   if (page === 'wants') return [renderWants, {}];
   if (page === 'want' && a && b === 'edit') return [renderWantForm, { id: a }];
   if (page === 'want' && a) return [renderWantDetail, { id: a }];
+  if (page === 'collections' && a) return [renderCollectionDetail, { id: a }];
+  if (page === 'collections') return [renderCollections, {}];
   if (page === 'settings') return [renderSettings, {}];
   if (page === 'shared') return [renderShared, { payload: a }];
   return [renderCollection, {}];
