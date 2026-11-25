@@ -1,92 +1,114 @@
 # DiscShelf
 
-A personal app for tracking a DVD, Blu-ray and 4K UHD collection, plus a want list. It is a static PWA hosted on GitHub Pages, designed for iPhone, and works offline. All data is kept on the device in IndexedDB. There is no backend, no account, no Azure, and no paid service.
+A personal app for tracking a DVD, Blu-ray and 4K UHD collection, plus a want list with price tracking. It is a static PWA on GitHub Pages, designed for iPhone, and works offline. Your data is stored on the device in IndexedDB. There is no backend, no account, no Azure and no paid service.
 
-**Current release: v0.1.0** (see [CHANGELOG.md](CHANGELOG.md))
+**Current release: v0.6.0** (see [CHANGELOG.md](CHANGELOG.md)).
 
-## What v0.1 does
+## Features
 
-- Add, edit and delete discs manually: title, year, barcode, format, packaging, region, condition, distributor, edition, number of discs, price paid, estimated value, where and when bought, and notes.
-- Collection totals in GBP: number of items, amount paid, and value (your estimate if set, otherwise what you paid).
-- Search across title, barcode, distributor and edition; filter by format; sort by title, recently added or value.
-- Barcode check-digit warning and a duplicate-barcode warning. Neither blocks saving.
-- Full backup to a JSON file (download, or share on iOS) and restore, either by **merging** (the newer copy of each record wins) or by **replacing** everything.
-- A backup reminder banner after 30 days, and a button to request persistent storage.
-- Works offline after the first visit, using a service worker. When a new version is available, the app shows a "Reload" banner; it never reloads by itself.
+| Area | What it does |
+|---|---|
+| **Add a disc** | Scan the barcode with the camera, search by title, or type everything in. Each disc records its exact edition: format, packaging (steelbook, boxset…), region, distributor, edition, condition, discs, price paid, where and when bought, and notes. |
+| **Barcode scanning** | Scanning fills in the barcode and tells you if you already own it or have it on your want list (copying the details across if so). Then you search the title. The barcode isn't looked up online: no free barcode database allows requests from a web app (see below). The barcode is still used for exact shop searches, duplicate warnings and valuation. |
+| **Look** | Dark "gallery" theme by default, with a light theme; it follows your device, or set it in Settings → Appearance. Poster views with progress rings, and screen transitions that respect Reduce Motion. Undo instead of "Are you sure?", and a "What's new" card after updates. The design language matches PokéBinder Studio. |
+| **Collections** | Named checklists of films, such as Disney Classics. You can add films by pasting a list of titles (**matched to TMDB automatically**, with posters; anything ambiguous, such as a remake, asks you to pick), by TMDB search, by importing a whole TMDB franchise (e.g. the Toy Story films), or by importing a public TMDB list. Each film shows as **Owned** (with the formats you own), **On want list** or **Missing**, and each collection shows how many you own. "Want it" and "I own it" buttons sit on every missing film. A film can be in any number of collections. Discs tick films off automatically by title, or by TMDB id where both have one. You can tick collections on the disc screen, filter the Discs tab by collection, and share a checklist as text. |
+| **Title search** | TMDB search for films and TV series, using your own free API key. Choosing a result fills in the title and year and adds a poster. Posters are kept for offline use. |
+| **Collection** | Totals for number of items, amount paid and value, plus search, a format filter and sorting. Each disc's value is your own estimate, otherwise the latest price you logged for the same barcode (and condition, if recorded), otherwise what you paid. |
+| **Want list** | Each want has a wanted condition (that condition or better counts) and a target price. Wants at or under target are tagged. |
+| **Cheapest place to buy** | Each want has links that open each shop's own search, by barcode or by title. You log the prices you find (price, postage, condition, date and an optional link), and the app shows the cheapest total in your condition or better, with a warning on prices over 30 days old and a full price history. **Mark as bought** moves the want into your collection with the price already filled in. |
+| **Export and share** | Collection and want list as CSV files, or as text lists through the share sheet or clipboard. A **share link** sends a read-only snapshot of your list packed into the link itself. |
+| **Import** | Imports a collection CSV in the same layout as the export (only Title is required), and can skip barcodes you already own. |
+| **Backup** | Full JSON backup (download, or share on iOS), restore by merging or replacing, a reminder after 30 days, and a request for persistent storage. |
+
+## Setup on your iPhone
+
+1. Deploy (see below), open the site in Safari, then tap **Share → Add to Home Screen**.
+2. **Get a TMDB key** (free, for non-commercial use): create an account at themoviedb.org, go to Settings → API and request a Developer key. Paste either the "API Key" or the "API Read Access Token" into **DiscShelf → Settings → Lookups**, then tap **Save key**.
+3. Tap **Test connections** to confirm TMDB works from your phone.
+4. Under **Settings → Retailer links**, tap through each shop's Barcode and Title links once. Any shop whose search page doesn't load properly needs its URL changing in `config.js`.
+5. Tap **Keep my data**, then make a first backup to iCloud Drive.
 
 ## Deploying to GitHub Pages
 
-1. Create a GitHub repo, unzip this release into it, then commit and push to `main`.
-2. In the repo, go to **Settings → Pages → Build and deployment**, choose **Deploy from a branch**, then set the branch to `main` and the folder to **`/docs`**.
-3. Open `https://<your-user>.github.io/<repo>/` in Safari on your iPhone, tap **Share**, then **Add to Home Screen**.
-4. In the app, open **Settings → Keep my data** and make a first backup to iCloud Drive.
+**Every file sits in one folder; there are no subfolders.** To deploy or update:
 
-All paths are relative, so the app works under a `/<repo>/` subpath without changes.
+1. Unzip the release and drag **all** the files into the repo's main folder on GitHub (Add file → Upload files), replacing what's there. Commit.
+2. Only the first time, or if you previously used `/docs`: go to **Settings → Pages → Build and deployment**, choose **Deploy from a branch**, then set the branch to `main` and the folder to **`/ (root)`**.
+3. Delete anything left from older layouts: the `docs`, `tests` and `.github` folders.
 
-### Releasing a new version
+Installed copies show a "Reload" banner when the new version arrives. **Settings → About this version** shows the address the app is running from, and has **Check for updates** and **Reload app from the internet** if it seems stuck.
 
-Change the version in **three** places: `docs/js/config.js` (`version`), `docs/sw.js` (`VERSION`) and `package.json`. A unit test fails if they differ. Changing `sw.js` is what makes installed copies offer the update.
+To release a new version, change the version number in `config.js`, `sw.js` and `package.json` (a test fails if they differ), and add a line to `WHATS_NEW` in `view-intro.js`.
 
-## Running the tests
+**Which files are the app?** Everything except the development files: `README.md`, `CHANGELOG.md`, `package.json`, `package-lock.json`, `playwright.config.js`, `e2e-helpers.js`, `*.spec.js` and `*.test.js`. Those don't run in the app and contain nothing private, so uploading them alongside is fine; GitHub Pages serves them, but nothing links to them. `.nojekyll` is optional: macOS and Windows hide files starting with a dot, so you may not see it to upload, and the site works without it.
 
-Requires Node 18+ and Python 3. Python is only used as the local web server.
+## Tests
 
 ```bash
 npm install
 npx playwright install chromium   # first time only
-npm test                          # unit tests (node --test) + Playwright end-to-end tests
+npm test                          # 35 unit tests (node --test) + 34 Playwright tests
 ```
 
-- **Unit tests** (`tests/unit`): money parsing and formatting, barcode check digits (including real UK EANs), value rules, backup validation, and whether the version numbers match.
-- **End-to-end tests** (`tests/e2e`): run in Chromium at iPhone 13 size with touch enabled. They cover add, edit and delete, totals, search, filter and sort, validation, region defaults, the duplicate-barcode warning, HTML-injection safety, data surviving a reload, the backup reminder, backup and restore (merge and replace) on a fresh device, rejecting a bad restore file, rapid tab switching, and offline use through the service worker. Any console error or CSP violation fails the test.
-- **Not tested on WebKit.** iPhone Safari runs on WebKit, but my build environment only had Chromium available. To add it, run `npx playwright install webkit` and add a project with `browserName: 'webkit'` to `playwright.config.js`.
-- `.github/workflows/test.yml` runs the tests on every push, using free GitHub Actions minutes for personal repos.
+- **Unit tests:** TMDB auto-matching (remakes, years ±1, films beating TV series, concurrency, stopping without a key), collection matching and title-list parsing (including "Fantasia 2000" not being read as a year), progress counts, ticking and unticking, money handling, barcode check digits (using real UK barcodes), finding the cheapest price for a condition, how value is chosen, title clean-up and format guessing, CSV quoting and formula protection, CSV export and re-import, share-link encoding, text lists, that every file is cached for offline use, that the CSP and config list the same outside services, and that every retailer link is valid.
+- **End-to-end tests** (Chromium at iPhone 13 size):
+  - Scanning: a fake camera shows a real EAN-13 barcode, and the real scanner code decodes it before the lookup and save run.
+  - Lookups: UPCitemdb and TMDB are stubbed, so the tests never call the real services.
+  - Want lists: price logging, cheapest price and marking as bought.
+  - Collections: pasting titles, "I own it" and "Want it", one disc counting in several collections, filtering, TMDB franchise and paged list imports, and a regression test that an untouched tick box never removes a film.
+  - Upgrading from a 0.4 database.
+  - TMDB auto-matching after pasting, picking between remakes in the sheet, and "Not on TMDB".
+  - Undo for deleted discs and collections.
+- **Motion:** the tests run with Reduce Motion on, because screen transitions swallow taps for about 0.2 s, which only machine-speed clicking notices. `transitions.spec.js` runs with motion on, to check transitions never leave the screen locked or log errors.
+  - Exports, share links (including in a second browser), CSV import and backup/restore.
+  - The TMDB key never appears in backups.
+  - Posters and the app work offline.
+  - Rapid tab switching.
+  - Any console error or CSP violation fails a test.
+- **Not tested on WebKit**, which is the engine iPhone Safari uses. To add it, run `npx playwright install webkit` and add a project to `playwright.config.js`.
 
 ## Configuration
 
-Everything you might want to change is in the config block at `docs/js/config.js`: formats, packaging types, regions, the default region for each format, condition labels, the backup reminder interval and locale. The Content Security Policy is in the `<meta>` tag in `docs/index.html`, and that is the only place to add the domains of external services later.
+Everything you might want to change is in the config block at `config.js`: formats, packaging, regions and default region per format, conditions, the default wanted condition, retailer search URLs, when a price counts as stale, the backup reminder, and the share-link length warning. Outside services must be listed in **both** `config.js` and the CSP `<meta>` tag in `index.html`; a test checks the two match.
 
 ## Security and privacy
 
-- **Strict CSP:** `default-src 'none'`, scripts and styles only from the app's own origin, no `unsafe-inline`, and `connect-src 'self'`. In v0.1 the app makes no calls to outside services.
-- GitHub Pages can't set HTTP headers, so the CSP is a `<meta>` tag. Browsers ignore `frame-ancestors` in a meta tag, so the app cannot stop other sites framing it. That is low risk for a personal app with no sign-in.
-- User text is only ever inserted as plain text, never as HTML, and a test checks this.
-- Backups leave out any setting whose key starts with `secret.`. That prefix is reserved for API keys in later releases, so a backup file never contains your keys.
+- **CSP:** `default-src 'none'`. Scripts and styles come only from this site, with no `unsafe-*`. The only outside connection allowed is `api.themoviedb.org`, plus images from `image.tmdb.org`. The camera is allowed through `mediastream:`. GitHub Pages can't set headers, so the CSP is a `<meta>` tag, and browsers ignore `frame-ancestors` there.
+- **What leaves the device:** only TMDB searches and imports (the search text or list id, plus your key), poster downloads, and any retailer link you tap. Barcodes never leave the device. Your collection, want list and prices stay on the device unless you export or share them.
+- **TMDB key:** stored only on the device. It is left out of backups, and a replace-restore keeps it. It appears in TMDB request URLs (v3 keys) or headers (v4 tokens) as TMDB requires.
+- **Share links** put the snapshot after the `#` in the link, which browsers never send to the server, so GitHub never sees the list. The snapshot leaves out prices, barcodes and notes. Anyone you send the link to can read the list.
+- **CSV exports** add a `'` before any cell starting with `= + - @`, so spreadsheet apps can't run them as formulas.
+- User text is only ever inserted as plain text, never as HTML, and the tests check this.
 
-## Data model (IndexedDB `discshelf`, schema 1)
+## Data model (IndexedDB `discshelf`, schema 2)
 
-| Store | Key | Used from | Notes |
-|---|---|---|---|
-| `items` | `id` (UUID) | v0.1 | Index on `ean`. Money is stored as whole pence (integers). |
-| `wants` | `id` | v0.3 | Created now so v0.3 doesn't need a data migration. |
-| `priceLog` | `id` | v0.3 | Index on `wantId`. |
-| `meta` | `key` | v0.1 | Stores `lastBackupAt`; later releases add settings and `secret.*` keys. |
+Schema 2 (v0.5.0) added the `collections` store. Older data upgrades automatically when the new version first opens, and v0.1–v0.4 backups still restore.
 
-## Research status (verified vs not)
-
-| Claim | Status |
+| Store | Contents |
 |---|---|
-| UPCitemdb free tier: 100 requests a day (search capped separately), 6 a minute, limited per IP, no key | Verified from UPCitemdb's own docs |
-| UPCitemdb covers UK EANs | **Partly.** Of 2 UK steelbook EANs tested, 1 was found (with US merchants) and 1 was not. The sample is too small to measure coverage. |
-| UPCitemdb accepts calls from a browser (CORS) | **Not verified.** To test in v0.2. |
-| Zebra UPC lookup | Deprecated 4 Dec 2023, so dropped |
-| Barcode Lookup free tier | **Not verified.** Only a "free test API account" was found. |
-| TMDB is free for non-commercial use, with attribution | Verified from the TMDB FAQ |
-| TMDB accepts calls from a browser (CORS) | **Not verified.** To test in v0.2. |
-| eBay Browse API needs a client secret and a proxy server | Verified. Out of scope because the app is GitHub Pages only. |
-| Amazon PA-API retired May 2026, replaced by the Creators API (needs an Associates account) | Verified from Amazon's own notices. Not free for a personal app. |
-| PriceCharting API requires a paid subscription | Verified from PriceCharting's own docs |
-| iPhone Safari has no built-in barcode reader, so v0.2 will bundle a scanner library | From memory. To confirm on a real device in v0.2. |
-| Safari keeps home-screen apps' data longer than ordinary websites' | From memory. Mitigated by backups and the persistent storage request. |
+| `items` | Collection discs. Money is stored as whole pence. Includes `tmdbId`, `posterPath` and `mediaType` when matched on TMDB. |
+| `wants` | `wantedCondition`, `targetPrice`, `status` (`wanted` or `bought`), and `boughtItemId` once bought. |
+| `priceLog` | `wantId`, `ean`, `retailer`, `price`, `postage`, `condition`, `seenOn`, `url` and `note`. |
+| `collections` | `name`, `description`, and `entries[]`, where each entry has `title`, `year`, `tmdbId`, `mediaType` and `posterPath`. Owned and wanted status isn't stored: it's worked out by matching your discs and wants. |
+| `meta` | `lastBackupAt` and `secret.tmdbKey` (left out of backups). Old `cache.upc.*` and `upc.usage` keys from v0.4 are ignored and left out of backups. |
 
-## Roadmap
+## Verified vs not
 
-- **v0.2:** barcode scanning with the camera, using a scanner library bundled in the app. The barcode is looked up on UPCitemdb, then the film is matched on TMDB (using your own TMDB key, stored on the device), and you confirm the edition details. Lookups are saved by barcode, and the app shows TMDB attribution.
-- **v0.3:** want list with wanted condition and target price. Links open each retailer's search by barcode or title (eBay UK, Amazon UK, Zavvi, CeX, MusicMagpie, HMV, Discogs). Every link format will be tested before it ships. A "Log price" button records price, postage, condition and date. Each want shows the cheapest total price in the wanted condition or better, with how old each price is, plus a price history. The latest logged price for a barcode and condition will then feed into collection value.
-- **v0.4:** exports as CSV and as a text list, plus a read-only share link. The share link packs a snapshot into the URL, so it has a size limit and suits the want list or a filtered list rather than the whole collection.
+| Item | Status |
+|---|---|
+| UPCitemdb barcode lookup | **Removed in v0.5.0.** Settings → Test connections on your iPhone gave "Failed to fetch" while TMDB worked, which almost certainly means UPCitemdb blocks requests from web pages (CORS). It could only work through a proxy server, which is out of scope. I'm not aware of a free alternative that covers UK films and allows browser requests. |
+| TMDB accepts requests from a browser | **Verified on your iPhone** (Test connections worked). |
+| TMDB franchise and list endpoints (`/search/collection`, `/collection/{id}`, `/list/{id}` with pages) | Built against TMDB's documented v3 endpoints and tested with stubbed replies. **Not yet tried against real TMDB data.** If list import fails, check that the list is public. |
+| TMDB is free for non-commercial use with attribution | Verified from TMDB's FAQ. The About section includes the required notice. **TMDB also asks for its logo** in the credits; I haven't included it because it must be one of TMDB's approved images, which you'd need to download yourself. |
+| Retailer search URL formats | **Only Rarewaves confirmed** (its `/search?q=` format works, though it returned no results for a barcode). eBay, Amazon, CeX, Zavvi, HMV, Discogs and Google Shopping either blocked automated checks or returned a generic page. Test them from Settings → Retailer links. The musicMagpie entry searches their eBay shop (`_ssn=musicmagpie`), because I couldn't confirm their own site's search URL. |
+| Camera scanning on iPhone | Tested in Chromium with a fake camera. **Not tested on a real iPhone.** Uses ZXing, because iPhone Safari is not known to have a built-in barcode reader. |
+| CompressionStream for share links | In Safari 16.4 and later. Older browsers fall back to longer, uncompressed links. |
 
 ## Version history
 
 | Version | Date | Summary |
 |---|---|---|
+| 0.6.0 | 2026-11-24 | Automatic TMDB matching for pasted titles, PokéBinder-style polish, all files in one folder |
+| 0.5.0 | 2026-11-24 | Collections (checklists, many-to-many), TMDB franchise and list import, UPCitemdb removed, scanning checks your own data instead |
+| 0.4.0 | 2026-11-24 | Scan and lookup, want list with price log and cheapest price, CSV/text export, share links, CSV import (v0.2–v0.4 released together) |
 | 0.1.0 | 2026-11-24 | App shell, manual collection management, totals, backup and restore, offline use |

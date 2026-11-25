@@ -1,13 +1,13 @@
 {
   "name": "discshelf",
-  "version": "0.1.0",
+  "version": "0.6.0",
   "private": true,
   "description": "Personal DVD/Blu-ray collection PWA (static, GitHub Pages).",
   "type": "module",
   "scripts": {
-    "serve": "python3 -m http.server 4173 --directory docs",
+    "serve": "python3 -m http.server 4173",
     "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "node --test tests/unit/*.test.js",
+    "test:unit": "node --test *.test.js",
     "test:e2e": "playwright test"
   },
   "devDependencies": {

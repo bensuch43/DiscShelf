@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <!-- Strict CSP. GitHub Pages can't set headers, so it's a meta tag
+       (frame-ancestors is ignored in meta; see README). External hosts are
+       listed here and in js/config.js, nowhere else. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://image.tmdb.org; connect-src 'self' https://api.themoviedb.org; media-src 'self' blob: mediastream:; manifest-src 'self'; worker-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#16181d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DiscShelf">
+  <title>DiscShelf</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="app.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <svg width="0" height="0" class="sr" aria-hidden="true" focusable="false">
+    <symbol id="i-disc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M12 5.5a6.5 6.5 0 0 1 6.5 6.5"/></symbol>
+    <symbol id="i-stack" viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-9.2-9A5 5 0 0 1 12 6a5 5 0 0 1 9.2 5C19 15.6 12 20 12 20z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="10" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="10" rx="1.5"/><rect x="3" y="15" width="7.5" height="6" rx="1.5"/><rect x="13.5" y="15" width="7.5" height="6" rx="1.5"/></symbol>
+    <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 8v8M10 8v8M13 8v8M17 8v8"/></symbol>
+  </svg>
+  <header class="topbar">
+    <img class="logo" src="icon-192.png" alt="">
+    <h1>DiscShelf</h1>
+    <span id="offline-badge" class="badge" hidden>Offline</span>
+  </header>
+
+  <div id="banners"></div>
+  <main id="view" tabindex="-1" aria-live="polite"></main>
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <nav class="tabbar" aria-label="Main">
+    <a href="#/collection" data-tab="collection"><svg class="i" aria-hidden="true"><use href="#i-disc"/></svg>Discs</a>
+    <a href="#/collections" data-tab="collections"><svg class="i" aria-hidden="true"><use href="#i-stack"/></svg>Collections</a>
+    <a href="#/wants" data-tab="wants"><svg class="i" aria-hidden="true"><use href="#i-heart"/></svg>Wants</a>
+    <a href="#/add" data-tab="add"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Add</a>
+    <a href="#/settings" data-tab="settings"><svg class="i" aria-hidden="true"><use href="#i-gear"/></svg>Settings</a>
+  </nav>
+
+  <!-- ===== Templates (cloned by JS; user data only ever set via textContent) ===== -->
+
+  <template id="tpl-collection">
+    <div data-slot="intro"></div>
+    <section class="stats" aria-label="Collection totals">
+      <div class="stat"><span class="k">Discs</span><strong class="v" data-total="count">0</strong></div>
+      <div class="stat"><span class="k">Paid</span><strong class="v" data-total="paid">£0.00</strong></div>
+      <div class="stat"><span class="k">Value</span><strong class="v" data-total="value">£0.00</strong></div>
+      <p class="hint small note" data-total="unpriced" hidden></p>
+    </section>
+    <div class="filters">
+      <div class="search">
+        <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+        <input type="search" id="search" placeholder="Search title, barcode, distributor" aria-label="Search collection" autocomplete="off">
+      </div>
+      <div class="toolbar">
+        <select id="filter-format" aria-label="Filter by format"><option value="">All formats</option></select>
+        <select id="sort" aria-label="Sort by">
+          <option value="title">Title A–Z</option>
+          <option value="recent">Recently added</option>
+          <option value="value">Value (high–low)</option>
+        </select>
+        <div class="seg" role="group" aria-label="View">
+          <button type="button" data-view="list" aria-label="List view"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg></button>
+          <button type="button" data-view="grid" aria-label="Poster view"><svg class="i" aria-hidden="true"><use href="#i-grid"/></svg></button>
+        </div>
+      </div>
+      <select id="filter-collection" aria-label="Filter by collection" hidden>
+        <option value="">All discs</option>
+        <option value="__none">Not in any collection</option>
+      </select>
+    </div>
+    <ul class="list" id="item-list" aria-label="Items"></ul>
+    <ul class="grid" id="item-grid" aria-label="Items" hidden></ul>
+    <p class="empty" id="empty" hidden>Nothing here yet. Tap <a href="#/add">Add</a> to log your first disc.</p>
+  </template>
+
+  <template id="tpl-item-row">
+    <li><a class="item-row">
+      <span class="main">
+        <span class="title"></span>
+        <span class="meta"></span>
+      </span>
+      <span class="value"></span>
+    </a></li>
+  </template>
+
+  <template id="tpl-item-form">
+    <form id="item-form" class="card form" novalidate>
+      <h2 data-heading>Add a disc</h2>
+      <div class="fill-bar">
+        <button type="button" class="primary" data-action="scan">Scan barcode</button>
+        <button type="button" data-action="search-title">Search title</button>
+      </div>
+      <p class="hint small">Scan the barcode, then type the title and tap Search title. Everything can also be filled by hand.</p>
+      <div class="lookup-panel" data-panel="lookup" aria-live="polite" hidden></div>
+      <div class="poster-slot" data-slot="poster" hidden></div>
+      <label>Title <span class="req">*</span><input name="title" required autocomplete="off"></label>
+      <div class="row">
+        <label>Year<input name="year" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+        <label>Discs<input name="discCount" inputmode="numeric" maxlength="3" autocomplete="off"></label>
+      </div>
+      <label>Barcode (EAN/UPC)<input name="ean" inputmode="numeric" autocomplete="off"></label>
+      <p class="field-note" data-note="ean" hidden></p>
+      <div class="row">
+        <label>Format<select name="format"></select></label>
+        <label>Packaging<select name="packaging"></select></label>
+      </div>
+      <div class="row">
+        <label>Region<select name="region"></select></label>
+        <label>Condition<select name="condition"></select></label>
+      </div>
+      <label>Distributor<input name="distributor" list="distributors" autocomplete="off"></label>
+      <datalist id="distributors"></datalist>
+      <label>Edition<input name="edition" placeholder="e.g. Zavvi exclusive, Limited 4K steelbook" autocomplete="off"></label>
+      <div class="row">
+        <label>Price paid (£)<input name="pricePaid" inputmode="decimal" autocomplete="off"></label>
+        <label>Estimated value (£)<input name="estimatedValue" inputmode="decimal" autocomplete="off"></label>
+      </div>
+      <p class="hint small" data-note="value" hidden></p>
+      <div class="row">
+        <label>Bought from<input name="purchasedFrom" autocomplete="off"></label>
+        <label>Date bought<input name="purchasedOn" type="date"></label>
+      </div>
+      <label>Notes<textarea name="notes" rows="3"></textarea></label>
+      <fieldset class="collections-field" data-field="collections">
+        <legend>Collections</legend>
+        <p class="hint small" data-note="no-collections">Create collections (e.g. Disney Classics) in the Collections tab, then tick them here.</p>
+      </fieldset>
+      <p class="error" data-error hidden></p>
+      <div class="actions">
+        <button type="submit" class="primary">Save</button>
+        <a href="#/collection" class="button" data-action="cancel">Cancel</a>
+        <button type="button" class="danger" data-action="delete" hidden>Delete</button>
+      </div>
+    </form>
+  </template>
+
+  <template id="tpl-collections">
+    <ul class="list" id="collection-list" aria-label="Collections"></ul>
+    <section class="card">
+      <h2>New collection</h2>
+      <p class="hint small">Checklists of films, like Disney Classics or a director's work. A film can be in any number of collections; discs you own tick it off.</p>
+      <form id="new-collection" class="form" novalidate>
+        <label>New collection name<input name="name" autocomplete="off" placeholder="e.g. Disney Classics"></label>
+        <label>Description (optional)<input name="description" autocomplete="off"></label>
+        <p class="error" data-error hidden></p>
+        <button type="submit" class="primary">Create collection</button>
+      </form>
+    </section>
+    <p class="empty" id="collections-empty" hidden>No collections yet.</p>
+  </template>
+
+  <template id="tpl-collection-detail">
+    <section class="card">
+      <div class="hero">
+        <div class="ring" data-field="ring" role="img"></div>
+        <div class="hero-text">
+          <h2 data-field="name"></h2>
+          <p class="hint small" data-field="description"></p>
+          <p class="small" data-field="progress"></p>
+        </div>
+      </div>
+      <div class="match-bar" data-field="matchBar" hidden>
+        <p class="hint small" data-field="matchStatus"></p>
+        <button type="button" class="small" data-action="match-tmdb">Match with TMDB</button>
+      </div>
+      <div class="actions">
+        <button type="button" class="small" data-action="edit-collection">Rename</button>
+        <button type="button" class="small" data-action="share-collection">Share checklist</button>
+        <button type="button" class="small danger push" data-action="delete-collection">Delete collection</button>
+      </div>
+      <form id="edit-collection" class="form" novalidate hidden>
+        <label>Name<input name="name" autocomplete="off"></label>
+        <label>Description<input name="description" autocomplete="off"></label>
+        <button type="submit" class="primary">Save</button>
+      </form>
+    </section>
+    <div class="filters"><div class="toolbar">
+      <select id="entry-filter" aria-label="Show">
+        <option value="all">All films</option>
+        <option value="owned">Owned</option>
+        <option value="missing">Missing</option>
+        <option value="wanted">On want list</option>
+      </select>
+      <select id="entry-sort" aria-label="Order">
+        <option value="list">List order</option>
+        <option value="title">Title A–Z</option>
+        <option value="year">Year</option>
+      </select>
+      <div class="seg" role="group" aria-label="View">
+        <button type="button" data-view="grid" aria-label="Poster view"><svg class="i" aria-hidden="true"><use href="#i-grid"/></svg></button>
+        <button type="button" data-view="list" aria-label="List view"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg></button>
+      </div>
+    </div></div>
+    <ul class="grid" id="entry-grid" aria-label="Films in this collection (posters)"></ul>
+    <ul class="list entries" id="entry-list" aria-label="Films in this collection" hidden></ul>
+    <p class="empty" id="entries-empty" hidden>No films yet. Add some below.</p>
+
+    <section class="card add-films">
+      <h2>Add films</h2>
+      <p data-field="addStatus" hidden></p>
+      <details open>
+        <summary>Search TMDB</summary>
+        <form id="entry-search" class="inline-form" novalidate>
+          <input name="query" aria-label="Search TMDB for a film or series" placeholder="Film or series name" autocomplete="off">
+          <button type="submit">Search</button>
+        </form>
+        <ul class="pick-list" data-field="searchResults"></ul>
+      </details>
+      <details>
+        <summary>Paste a list of titles</summary>
+        <form id="entry-paste" class="form" novalidate>
+          <label>One film per line. Put years in brackets, e.g. Pinocchio (1940).
+            <textarea name="titles" rows="8" placeholder="Snow White and the Seven Dwarfs (1937)&#10;Pinocchio (1940)&#10;Fantasia (1940)"></textarea>
+          </label>
+          <button type="submit">Add titles</button>
+        </form>
+      </details>
+      <details>
+        <summary>Import a TMDB franchise</summary>
+        <form id="entry-franchise" class="inline-form" novalidate>
+          <input name="franchise" aria-label="Franchise name" placeholder="e.g. Toy Story" autocomplete="off">
+          <button type="submit">Find</button>
+        </form>
+        <ul class="pick-list" data-field="franchiseResults"></ul>
+      </details>
+      <details>
+        <summary>Import a public TMDB list</summary>
+        <form id="entry-tmdb-list" class="inline-form" novalidate>
+          <input name="listUrl" aria-label="TMDB list link" placeholder="https://www.themoviedb.org/list/…" autocomplete="off" inputmode="url">
+          <button type="submit">Import</button>
+        </form>
+      </details>
+    </section>
+  </template>
+
+  <template id="tpl-wants">
+    <section class="card wants-head">
+      <div>
+        <strong data-total="wants"></strong>
+        <span class="hint" data-total="under"></span>
+      </div>
+      <a href="#/wants/new" class="button primary">Add a want</a>
+    </section>
+    <div class="filters">
+      <input type="search" id="want-search" placeholder="Search wants" aria-label="Search wants" autocomplete="off">
+      <label class="inline"><input type="checkbox" id="show-bought"> Show bought</label>
+    </div>
+    <ul class="list" id="want-list" aria-label="Wants"></ul>
+    <p class="empty" id="wants-empty" hidden>No wants yet. Tap <a href="#/wants/new">Add a want</a> to start your list.</p>
+  </template>
+
+  <template id="tpl-want-form">
+    <form id="want-form" class="card form" novalidate>
+      <h2 data-heading>Add a want</h2>
+      <div class="fill-bar">
+        <button type="button" class="primary" data-action="scan">Scan barcode</button>
+        <button type="button" data-action="search-title">Search title</button>
+      </div>
+      <div class="lookup-panel" data-panel="lookup" aria-live="polite" hidden></div>
+      <div class="poster-slot" data-slot="poster" hidden></div>
+      <label>Title <span class="req">*</span><input name="title" required autocomplete="off"></label>
+      <label>Year<input name="year" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+      <label>Barcode (EAN/UPC)<input name="ean" inputmode="numeric" autocomplete="off"></label>
+      <p class="field-note" data-note="ean" hidden></p>
+      <div class="row">
+        <label>Format<select name="format"></select></label>
+        <label>Packaging<select name="packaging"></select></label>
+      </div>
+      <label>Edition<input name="edition" placeholder="Leave blank if any edition will do" autocomplete="off"></label>
+      <div class="row">
+        <label>Wanted condition (or better)<select name="wantedCondition"></select></label>
+        <label>Target price (£)<input name="targetPrice" inputmode="decimal" autocomplete="off"></label>
+      </div>
+      <label>Notes<textarea name="notes" rows="2"></textarea></label>
+      <p class="error" data-error hidden></p>
+      <div class="actions">
+        <button type="submit" class="primary">Save</button>
+        <a href="#/wants" class="button" data-action="cancel">Cancel</a>
+      </div>
+    </form>
+  </template>
+
+  <template id="tpl-want-detail">
+    <section class="card want-head">
+      <div data-slot="poster"></div>
+      <div>
+        <h2 data-field="title"></h2>
+        <p class="meta" data-field="meta"></p>
+        <p data-field="wanted"></p>
+        <p class="tag" data-field="status" hidden>Bought</p>
+      </div>
+    </section>
+    <section class="card">
+      <h3>Cheapest in your condition or better</h3>
+      <div data-field="cheapest" class="cheapest"></div>
+    </section>
+    <section class="card">
+      <h3>Where to look</h3>
+      <p class="hint small">Opens each shop's own search. Barcode is exact where the shop supports it; title finds more.</p>
+      <ul class="links" data-field="links"></ul>
+    </section>
+    <section class="card">
+      <h3>Log a price</h3>
+      <form id="log-form" class="form" novalidate>
+        <div class="row">
+          <label>Shop<select name="retailer"></select></label>
+          <label>Condition<select name="condition"></select></label>
+        </div>
+        <label data-wrap="otherRetailer" hidden>Retailer name<input name="otherRetailer" autocomplete="off"></label>
+        <div class="row">
+          <label>Price (£)<input name="price" inputmode="decimal" autocomplete="off"></label>
+          <label>Postage (£)<input name="postage" inputmode="decimal" autocomplete="off" placeholder="0.00"></label>
+        </div>
+        <label>Date seen<input name="seenOn" type="date"></label>
+        <label>Listing link (optional)<input name="url" type="url" inputmode="url" autocomplete="off" placeholder="https://"></label>
+        <label>Note (optional)<input name="note" autocomplete="off"></label>
+        <p class="error" data-error hidden></p>
+        <button type="submit" class="primary">Log price</button>
+      </form>
+    </section>
+    <section class="card">
+      <h3>Price history <span data-field="history-count"></span></h3>
+      <ul class="history" data-field="history"></ul>
+    </section>
+    <div class="actions">
+      <a class="button" data-action="edit">Edit</a>
+      <button type="button" class="primary" data-action="bought">Mark as bought</button>
+      <button type="button" class="danger" data-action="delete-want">Delete</button>
+    </div>
+  </template>
+
+  <template id="tpl-settings">
+    <section class="card">
+      <h2>Lookups</h2>
+      <label>TMDB API key or read access token
+        <input type="password" data-field="tmdbKey" autocomplete="off" spellcheck="false" placeholder="Paste from themoviedb.org > Settings > API">
+      </label>
+      <p class="hint small">Stored only on this device and never included in backups. Needed for title search and posters.</p>
+      <div class="actions">
+        <button type="button" data-action="save-key">Save key</button>
+        <button type="button" data-action="test-connections">Test connections</button>
+      </div>
+      <ul class="results" data-field="connectionResults"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Export and share</h2>
+      <div class="actions">
+        <button type="button" data-action="csv-collection">Collection CSV</button>
+        <button type="button" data-action="csv-wants">Want list CSV</button>
+        <button type="button" data-action="text-collection">Share collection as text</button>
+        <button type="button" data-action="text-wants">Share want list as text</button>
+      </div>
+      <textarea data-field="textPreview" rows="6" readonly hidden aria-label="Text to copy"></textarea>
+      <h3>Share link</h3>
+      <fieldset>
+        <legend>Link to</legend>
+        <label class="inline"><input type="radio" name="shareKind" value="wants" checked> Want list</label>
+        <label class="inline"><input type="radio" name="shareKind" value="collection"> Whole collection</label>
+      </fieldset>
+      <button type="button" data-action="make-link">Create link</button>
+      <textarea data-field="shareLink" rows="3" readonly hidden aria-label="Share link"></textarea>
+      <p class="hint small" data-field="shareNote" hidden></p>
+      <div class="actions" data-field="shareActions" hidden>
+        <button type="button" class="primary" data-action="share-link">Share link</button>
+        <button type="button" data-action="copy-link">Copy link</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Import collection (CSV)</h2>
+      <p class="hint small">Uses the same columns as the collection CSV export (only Title is required). Export one first to use as a template.</p>
+      <label>CSV file<input type="file" accept=".csv,text/csv" data-field="importFile"></label>
+      <label class="inline"><input type="checkbox" data-field="skipDupes" checked> Skip rows whose barcode I already own</label>
+      <button type="button" data-action="import-csv">Import</button>
+      <p class="error" data-error="import" hidden></p>
+    </section>
+
+    <section class="card">
+      <h2>Backup</h2>
+      <p>Last backup: <strong data-field="lastBackup">never</strong></p>
+      <div class="actions">
+        <button type="button" class="primary" data-action="download-backup">Download backup</button>
+        <button type="button" data-action="share-backup" hidden>Share backup</button>
+      </div>
+      <p class="hint">Your data lives only on this device. Save a backup to iCloud Drive or Files regularly.</p>
+    </section>
+
+    <section class="card">
+      <h2>Restore</h2>
+      <label>Backup file<input type="file" accept="application/json,.json" data-field="restoreFile"></label>
+      <fieldset>
+        <legend>How to restore</legend>
+        <label class="inline"><input type="radio" name="restoreMode" value="merge" checked> Merge (keep newer copy of each record)</label>
+        <label class="inline"><input type="radio" name="restoreMode" value="replace"> Replace everything on this device</label>
+      </fieldset>
+      <button type="button" data-action="restore">Restore</button>
+      <p class="error" data-error="restore" hidden></p>
+    </section>
+
+    <section class="card">
+      <h2>Retailer links</h2>
+      <p class="hint small">Check each shop's search opens with results for <strong data-field="retailerSample"></strong>. Links marked unverified couldn't be tested during the build; fix any that fail in <code>config.js</code>.</p>
+      <ul class="links" data-field="retailerLinks"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Storage</h2>
+      <p data-field="storageStatus">Checking…</p>
+      <button type="button" data-action="persist" hidden>Keep my data (ask for persistent storage)</button>
+    </section>
+
+    <section class="card">
+      <h2>Appearance</h2>
+      <label class="form-label">Theme
+        <select data-field="theme">
+          <option value="auto">Follow device</option>
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>About this version</h2>
+      <p>DiscShelf <span data-field="version"></span>. Works offline. Nothing leaves this device unless you export it, share it, or look something up.</p>
+      <p class="hint small">Running from <code data-field="runningFrom"></code>. If that isn't the address you upload to, your Home Screen icon points at an old copy: open the right address in Safari and add it to the Home Screen again.</p>
+      <div class="actions">
+        <button type="button" class="small" data-action="check-updates">Check for updates</button>
+        <button type="button" class="small" data-action="reload-app">Reload app from the internet</button>
+      </div>
+      <p class="hint small" data-field="updateStatus" hidden></p>
+      <p class="hint small">This product uses the TMDB API but is not endorsed or certified by TMDB. Film and TV data and posters from <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">The Movie Database (TMDB)</a>.</p>
+      <p class="hint small">Scanning uses <a href="ZXING-LICENSE.txt" target="_blank">ZXing</a> (Apache License 2.0).</p>
+    </section>
+  </template>
+
+  <template id="tpl-entry-sheet">
+    <dialog class="sheet" aria-labelledby="sheet-title">
+      <div class="sheet-body">
+        <div class="sheet-head">
+          <span data-slot="poster"></span>
+          <div>
+            <h2 id="sheet-title" data-field="title"></h2>
+            <div data-field="status"></div>
+          </div>
+        </div>
+        <div class="actions" data-field="actions"></div>
+        <section data-field="tmdb">
+          <h3>TMDB match</h3>
+          <p class="hint small" data-field="matchText"></p>
+          <ul class="pick-list" data-field="candidates"></ul>
+          <form class="inline-form" data-field="searchForm" novalidate>
+            <input name="q" aria-label="Search TMDB for this film" autocomplete="off">
+            <button type="submit">Search</button>
+          </form>
+          <div class="actions" data-field="matchActions"></div>
+        </section>
+        <div class="actions">
+          <button type="button" class="danger small" data-action="remove-entry">Remove from collection</button>
+          <button type="button" class="small push" data-action="close-sheet">Close</button>
+        </div>
+      </div>
+    </dialog>
+  </template>
+
+  <template id="tpl-whats-new">
+    <section class="card whats-new" role="status">
+      <h2>What's new in DiscShelf <span data-field="version"></span></h2>
+      <ul data-field="items"></ul>
+      <div class="actions"><button type="button" class="small" data-action="dismiss">Got it</button></div>
+    </section>
+  </template>
+
+  <template id="tpl-getting-started">
+    <section class="card getting-started">
+      <h2>Getting started</h2>
+      <ol>
+        <li>Add your free <a href="#/settings">TMDB key in Settings</a> for title search and posters.</li>
+        <li>Tap <a href="#/add">Add</a>: scan the barcode, search the title, pick the edition.</li>
+        <li>Make <a href="#/collections">collections</a> to track sets like Disney Classics.</li>
+        <li>Back up regularly from Settings: your data lives only on this device.</li>
+      </ol>
+    </section>
+  </template>
+
+  <template id="tpl-scanner">
+    <div class="scanner" role="dialog" aria-modal="true" aria-label="Scan barcode">
+      <div class="scanner-video">
+        <video playsinline muted autoplay></video>
+        <div class="guide" aria-hidden="true"></div>
+      </div>
+      <p class="scan-status" data-scan-status>Starting camera…</p>
+      <form class="scanner-manual" novalidate>
+        <label>Or type the barcode<input name="manualEan" inputmode="numeric" autocomplete="off"></label>
+        <div class="actions">
+          <button type="submit" class="primary">Use this barcode</button>
+          <button type="button" data-action="cancel-scan">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </template>
+</body>
+</html>

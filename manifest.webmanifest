@@ -1,0 +1,17 @@
+{
+  "name": "DiscShelf",
+  "short_name": "DiscShelf",
+  "description": "Track your DVD, Blu-ray and 4K UHD collection and want list.",
+  "lang": "en-GB",
+  "start_url": "./#/collection",
+  "scope": "./",
+  "id": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#16181d",
+  "theme_color": "#16181d",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
