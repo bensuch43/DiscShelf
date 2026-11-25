@@ -125,7 +125,7 @@
       </div>
       <label>Distributor<input name="distributor" list="distributors" autocomplete="off"></label>
       <datalist id="distributors"></datalist>
-      <label>Edition<input name="edition" placeholder="e.g. Zavvi exclusive, Limited 4K steelbook" autocomplete="off"></label>
+      <label>Edition<input name="edition" placeholder="e.g. HMV exclusive, Limited 4K steelbook" autocomplete="off"></label>
       <div class="row">
         <label>Price paid (£)<input name="pricePaid" inputmode="decimal" autocomplete="off"></label>
         <label>Estimated value (£)<input name="estimatedValue" inputmode="decimal" autocomplete="off"></label>
@@ -415,7 +415,7 @@
 
     <section class="card">
       <h2>Retailer links</h2>
-      <p class="hint small">Check each shop's search opens with results for <strong data-field="retailerSample"></strong>. Links marked unverified couldn't be tested during the build; fix any that fail in <code>config.js</code>.</p>
+      <p class="hint small">Check each shop's search opens with results for <strong data-field="retailerSample"></strong>. Only shops whose search finds discs by barcode show a Barcode button. If a shop's search stops working, change its link in <code>config.js</code>.</p>
       <ul class="links" data-field="retailerLinks"></ul>
     </section>
 

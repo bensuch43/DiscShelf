@@ -48,7 +48,7 @@ export async function renderSettings(params, ctx) {
   for (const r of CONFIG.retailers) {
     rl.append(el('li', { className: 'link-row' },
       el('span', { className: 'name', textContent: `${r.name}${r.verified ? '' : ' (unverified)'}` }),
-      el('a', { className: 'button small', href: retailerLink(r, sample.ean), target: '_blank', rel: 'noopener noreferrer', textContent: 'Barcode' }),
+      r.barcode ? el('a', { className: 'button small', href: retailerLink(r, sample.ean), target: '_blank', rel: 'noopener noreferrer', textContent: 'Barcode' }) : null,
       el('a', { className: 'button small', href: retailerLink(r, sample.title), target: '_blank', rel: 'noopener noreferrer', textContent: 'Title' })));
   }
 

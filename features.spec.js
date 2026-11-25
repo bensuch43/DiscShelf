@@ -130,7 +130,9 @@ test('want list: links, price log, cheapest for condition or better, mark as bou
 
   // Retailer links: barcode and title for each configured shop.
   const links = page.locator('[data-field="links"] .link-row');
-  await expect(links).toHaveCount(9);
+  await expect(links).toHaveCount(8);
+  await expect(links.getByRole('link', { name: 'Barcode' })).toHaveCount(3); // eBay, Amazon, CeX only
+  await expect(page.locator('[data-field="links"]')).not.toContainText('Zavvi');
   await expect(links.first().getByRole('link', { name: 'Barcode' })).toHaveAttribute('href', 'https://www.ebay.co.uk/sch/i.html?_nkw=5039036000000');
   await expect(links.first().getByRole('link', { name: 'Title' })).toHaveAttribute('href', 'https://www.ebay.co.uk/sch/i.html?_nkw=Heat%20Blu-ray');
   await expect(links.first().getByRole('link', { name: 'Title' })).toHaveAttribute('target', '_blank');

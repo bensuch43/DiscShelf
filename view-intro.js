@@ -6,6 +6,9 @@ import { clone, el } from './ui.js';
 
 // Newest first. Shown once after updating, for releases newer than the last one you opened.
 export const WHATS_NEW = [
+  { version: '0.6.1', items: [
+    'Shop links tidied: barcode search only where it works (eBay, Amazon, CeX); title search everywhere else. Zavvi removed.',
+  ] },
   { version: '0.6.0', items: [
     'Pasted collection titles are matched to TMDB automatically, with posters. Anything ambiguous asks you to pick.',
     'A new look: dark and light themes, poster views, progress rings.',

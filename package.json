@@ -1,6 +1,6 @@
 {
   "name": "discshelf",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "private": true,
   "description": "Personal DVD/Blu-ray collection PWA (static, GitHub Pages).",
   "type": "module",

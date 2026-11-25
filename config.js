@@ -6,7 +6,7 @@
 // =====================================================================
 export const CONFIG = Object.freeze({
   appName: 'DiscShelf',
-  version: '0.6.0',
+  version: '0.6.1',
 
   // IndexedDB. Bump dbVersion only with a migration in db.js.
   dbName: 'discshelf',
@@ -69,18 +69,19 @@ export const CONFIG = Object.freeze({
 
   // ---- Retailer search links ----
   // {q} = URL-encoded query (barcode or "title format"). Links open in Safari.
-  // verified: true only where the URL format was confirmed during the build.
-  // Test the rest from Settings > Retailer links on your phone, and edit here.
+  // barcode: true only where searching by EAN actually finds the disc; the
+  // rest show a Title button only. Tested on iPhone on 25 Nov 2026: eBay,
+  // Amazon and CeX work by barcode and title; the others by title only.
+  // Zavvi was removed (no longer trading).
   retailers: [
-    { id: 'ebay', name: 'eBay UK', url: 'https://www.ebay.co.uk/sch/i.html?_nkw={q}', verified: false },
-    { id: 'amazon', name: 'Amazon UK', url: 'https://www.amazon.co.uk/s?k={q}', verified: false },
-    { id: 'cex', name: 'CeX', url: 'https://uk.webuy.com/search?stext={q}', verified: false },
-    { id: 'musicmagpie', name: 'musicMagpie (eBay shop)', url: 'https://www.ebay.co.uk/sch/i.html?_nkw={q}&_ssn=musicmagpie', verified: false },
-    { id: 'zavvi', name: 'Zavvi', url: 'https://www.zavvi.com/search?q={q}', verified: false },
-    { id: 'hmv', name: 'HMV', url: 'https://hmv.com/search?searchtext={q}', verified: false },
-    { id: 'rarewaves', name: 'Rarewaves', url: 'https://www.rarewaves.com/search?q={q}', verified: true },
-    { id: 'discogs', name: 'Discogs', url: 'https://www.discogs.com/search/?q={q}&type=all', verified: false },
-    { id: 'google', name: 'Google Shopping', url: 'https://www.google.co.uk/search?tbm=shop&q={q}', verified: false },
+    { id: 'ebay', name: 'eBay UK', url: 'https://www.ebay.co.uk/sch/i.html?_nkw={q}', barcode: true, verified: true },
+    { id: 'amazon', name: 'Amazon UK', url: 'https://www.amazon.co.uk/s?k={q}', barcode: true, verified: true },
+    { id: 'cex', name: 'CeX', url: 'https://uk.webuy.com/search?stext={q}', barcode: true, verified: true },
+    { id: 'musicmagpie', name: 'musicMagpie (eBay shop)', url: 'https://www.ebay.co.uk/sch/i.html?_nkw={q}&_ssn=musicmagpie', barcode: false, verified: true },
+    { id: 'hmv', name: 'HMV', url: 'https://hmv.com/search?searchtext={q}', barcode: false, verified: true },
+    { id: 'rarewaves', name: 'Rarewaves', url: 'https://www.rarewaves.com/search?q={q}', barcode: false, verified: true },
+    { id: 'discogs', name: 'Discogs', url: 'https://www.discogs.com/search/?q={q}&type=all', barcode: false, verified: true },
+    { id: 'google', name: 'Google Shopping', url: 'https://www.google.co.uk/search?tbm=shop&q={q}', barcode: false, verified: true },
   ],
   // Sample used by Settings > Retailer links (real UK steelbook barcode).
   retailerTestSample: { ean: '5051892145329', title: 'Man of Steel Blu-ray' },

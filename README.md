@@ -2,7 +2,7 @@
 
 A personal app for tracking a DVD, Blu-ray and 4K UHD collection, plus a want list with price tracking. It is a static PWA on GitHub Pages, designed for iPhone, and works offline. Your data is stored on the device in IndexedDB. There is no backend, no account, no Azure and no paid service.
 
-**Current release: v0.6.0** (see [CHANGELOG.md](CHANGELOG.md)).
+**Current release: v0.6.1** (see [CHANGELOG.md](CHANGELOG.md)).
 
 ## Features
 
@@ -100,7 +100,7 @@ Schema 2 (v0.5.0) added the `collections` store. Older data upgrades automatical
 | TMDB accepts requests from a browser | **Verified on your iPhone** (Test connections worked). |
 | TMDB franchise and list endpoints (`/search/collection`, `/collection/{id}`, `/list/{id}` with pages) | Built against TMDB's documented v3 endpoints and tested with stubbed replies. **Not yet tried against real TMDB data.** If list import fails, check that the list is public. |
 | TMDB is free for non-commercial use with attribution | Verified from TMDB's FAQ. The About section includes the required notice. **TMDB also asks for its logo** in the credits; I haven't included it because it must be one of TMDB's approved images, which you'd need to download yourself. |
-| Retailer search URL formats | **Only Rarewaves confirmed** (its `/search?q=` format works, though it returned no results for a barcode). eBay, Amazon, CeX, Zavvi, HMV, Discogs and Google Shopping either blocked automated checks or returned a generic page. Test them from Settings → Retailer links. The musicMagpie entry searches their eBay shop (`_ssn=musicmagpie`), because I couldn't confirm their own site's search URL. |
+| Retailer search links | **Tested on iPhone (25 Nov 2026).** eBay UK, Amazon UK and CeX work by barcode and by title. musicMagpie (eBay shop), HMV, Rarewaves, Discogs and Google Shopping work by title only, so they show no Barcode button. Zavvi has been removed because it's no longer trading. |
 | Camera scanning on iPhone | Tested in Chromium with a fake camera. **Not tested on a real iPhone.** Uses ZXing, because iPhone Safari is not known to have a built-in barcode reader. |
 | CompressionStream for share links | In Safari 16.4 and later. Older browsers fall back to longer, uncompressed links. |
 
@@ -108,6 +108,7 @@ Schema 2 (v0.5.0) added the `collections` store. Older data upgrades automatical
 
 | Version | Date | Summary |
 |---|---|---|
+| 0.6.1 | 2026-11-25 | Shop links updated after iPhone testing; Zavvi removed |
 | 0.6.0 | 2026-11-24 | Automatic TMDB matching for pasted titles, PokéBinder-style polish, all files in one folder |
 | 0.5.0 | 2026-11-24 | Collections (checklists, many-to-many), TMDB franchise and list import, UPCitemdb removed, scanning checks your own data instead |
 | 0.4.0 | 2026-11-24 | Scan and lookup, want list with price log and cheapest price, CSV/text export, share links, CSV import (v0.2–v0.4 released together) |

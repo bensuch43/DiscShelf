@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.1 — 2026-11-25
+
+### Changed
+
+- **Shop links now follow your iPhone test results.**
+  - eBay UK, Amazon UK and CeX keep both Barcode and Title buttons.
+  - musicMagpie, HMV, Rarewaves, Discogs and Google Shopping show Title only, because their search doesn't find discs by barcode.
+  - Each shop in `config.js` now has a `barcode` flag, and all are marked tested.
+- **Zavvi removed** because it's no longer trading. Prices you logged at Zavvi are kept, and still count as the cheapest where they are.
+- The Edition field's example text no longer mentions Zavvi.
+
 ## 0.6.0 — 2026-11-24
 
 ### Added

@@ -125,8 +125,11 @@ test('service worker precaches every app file in the folder', () => {
   for (const [, f] of sw.matchAll(/'\.\/([^']+)'/g)) if (f) assert.ok(appFiles.includes(f) || ['index.html', 'ZXING-LICENSE.txt'].includes(f), `sw.js lists missing file ${f}`);
 });
 
-test('every retailer URL has a {q} placeholder and is https', () => {
+test('every retailer URL has a {q} placeholder and is https; barcode flags as tested', () => {
+  assert.deepEqual(CONFIG.retailers.filter((r) => r.barcode).map((r) => r.id), ['ebay', 'amazon', 'cex']);
+  assert.ok(!CONFIG.retailers.some((r) => r.id === 'zavvi'));
   for (const r of CONFIG.retailers) {
+    assert.equal(typeof r.barcode, 'boolean', r.id);
     assert.ok(r.url.startsWith('https://'), r.id);
     assert.equal(r.url.split('{q}').length, 2, r.id);
   }

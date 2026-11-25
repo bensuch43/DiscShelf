@@ -203,7 +203,7 @@ export async function renderWantDetail({ id }, ctx) {
   const titleQuery = [want.title, want.format].filter(Boolean).join(' ');
   for (const r of CONFIG.retailers) {
     const row = el('li', { className: 'link-row' }, el('span', { className: 'name', textContent: r.name }));
-    if (want.ean) row.append(el('a', { className: 'button small', href: retailerLink(r, want.ean), target: '_blank', rel: 'noopener noreferrer', textContent: 'Barcode' }));
+    if (want.ean && r.barcode) row.append(el('a', { className: 'button small', href: retailerLink(r, want.ean), target: '_blank', rel: 'noopener noreferrer', textContent: 'Barcode' }));
     row.append(el('a', { className: 'button small', href: retailerLink(r, titleQuery), target: '_blank', rel: 'noopener noreferrer', textContent: 'Title' }));
     linkList.append(row);
   }
